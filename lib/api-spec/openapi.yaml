@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Intelligent Field Inspection & Infrastructure Auditor API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: inspections
+    description: Inspection log operations
+  - name: dashboard
+    description: Dashboard summary and analytics
 paths:
   /healthz:
     get:
@@ -24,6 +28,189 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /inspections:
+    get:
+      operationId: listInspections
+      tags: [inspections]
+      summary: List all inspections
+      description: Returns all inspection records
+      responses:
+        "200":
+          description: List of inspections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inspection"
+    post:
+      operationId: createInspection
+      tags: [inspections]
+      summary: Create one or more inspections
+      description: Create a single inspection or batch array for offline sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectionInput"
+      responses:
+        "201":
+          description: Created inspection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inspection"
+
+  /inspections/batch:
+    post:
+      operationId: batchCreateInspections
+      tags: [inspections]
+      summary: Batch create inspections (offline sync)
+      description: Accepts an array of inspections for bulk sync from local queue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectionBatchInput"
+      responses:
+        "201":
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inspection"
+
+  /inspections/{id}:
+    get:
+      operationId: getInspection
+      tags: [inspections]
+      summary: Get a single inspection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Inspection record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inspection"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: updateInspection
+      tags: [inspections]
+      summary: Update an inspection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectionUpdate"
+      responses:
+        "200":
+          description: Updated inspection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inspection"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteInspection
+      tags: [inspections]
+      summary: Delete an inspection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Dashboard summary metrics
+      description: Returns total counts, health score, and breakdown by type and severity
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/by-type:
+    get:
+      operationId: getByType
+      tags: [dashboard]
+      summary: Issues grouped by type
+      responses:
+        "200":
+          description: Breakdown by issue type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TypeBreakdown"
+
+  /dashboard/by-severity:
+    get:
+      operationId: getBySeverity
+      tags: [dashboard]
+      summary: Issues grouped by severity
+      responses:
+        "200":
+          description: Breakdown by severity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeverityBreakdown"
+
+  /dashboard/recent:
+    get:
+      operationId: getRecentInspections
+      tags: [dashboard]
+      summary: Recent inspections feed
+      responses:
+        "200":
+          description: Recent inspections (last 10)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inspection"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +221,182 @@ components:
       required:
         - status
 
+    Inspection:
+      type: object
+      required:
+        - id
+        - title
+        - issueType
+        - severity
+        - description
+        - latitude
+        - longitude
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        issueType:
+          type: string
+          enum:
+            - Pavement Distress
+            - Drainage
+            - Structural Damage
+            - Signage
+            - Erosion
+            - Bridge Deterioration
+            - Utility Failure
+            - Other
+        severity:
+          type: string
+          enum: [Critical, Medium, Low]
+        description:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        status:
+          type: string
+          enum: [Active, Resolved, Under Review]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    InspectionInput:
+      type: object
+      required:
+        - title
+        - issueType
+        - severity
+        - description
+        - latitude
+        - longitude
+      properties:
+        title:
+          type: string
+          minLength: 1
+        issueType:
+          type: string
+          enum:
+            - Pavement Distress
+            - Drainage
+            - Structural Damage
+            - Signage
+            - Erosion
+            - Bridge Deterioration
+            - Utility Failure
+            - Other
+        severity:
+          type: string
+          enum: [Critical, Medium, Low]
+        description:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        status:
+          type: string
+          enum: [Active, Resolved, Under Review]
+
+    InspectionUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        issueType:
+          type: string
+          enum:
+            - Pavement Distress
+            - Drainage
+            - Structural Damage
+            - Signage
+            - Erosion
+            - Bridge Deterioration
+            - Utility Failure
+            - Other
+        severity:
+          type: string
+          enum: [Critical, Medium, Low]
+        description:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        status:
+          type: string
+          enum: [Active, Resolved, Under Review]
+
+    InspectionBatchInput:
+      type: object
+      required:
+        - inspections
+      properties:
+        inspections:
+          type: array
+          items:
+            $ref: "#/components/schemas/InspectionInput"
+
+    DashboardSummary:
+      type: object
+      required:
+        - totalLogs
+        - activeIssues
+        - resolvedIssues
+        - regionalHealthScore
+        - criticalCount
+        - mediumCount
+        - lowCount
+      properties:
+        totalLogs:
+          type: integer
+        activeIssues:
+          type: integer
+        resolvedIssues:
+          type: integer
+        regionalHealthScore:
+          type: integer
+          description: Score 0-100, deducted by severity of active issues
+        criticalCount:
+          type: integer
+        mediumCount:
+          type: integer
+        lowCount:
+          type: integer
+
+    TypeBreakdown:
+      type: object
+      required:
+        - issueType
+        - count
+      properties:
+        issueType:
+          type: string
+        count:
+          type: integer
+
+    SeverityBreakdown:
+      type: object
+      required:
+        - severity
+        - count
+      properties:
+        severity:
+          type: string
+        count:
+          type: integer
+
+    ApiError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string

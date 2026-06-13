@@ -1,0 +1,36 @@
+Create a responsive web application named "Intelligent Field Inspection & Infrastructure Auditor" for civil engineers to log, track, and analyze infrastructure failures. The core philosophy of this app is "Offline-First"—data must be safely preserved locally before syncing, and PDF reporting must work seamlessly.
+
+Use the following tech stack:
+- Frontend: React (Vite), Tailwind CSS, Lucide React
+- Backend: Node.js with Express
+- Database: MongoDB (with Mongoose; include a local fallback array if MONGODB_URI is absent)
+- Mapping: Leaflet (react-leaflet) for geospatial markers
+- PDF Generation: jspdf and jspdf-autotable
+
+Please implement the following technical specifications:
+
+1. Architecture for Offline-First Data Logging:
+   - Implement a Local Storage Queue System: Create a utility/state manager that handles a structured queue (e.g., 'pending_inspections').
+   - When a user submits a form: Always attempt to save it to the local state/queue first to ensure zero data loss, then attempt to dispatch it to the backend POST `/api/inspections` endpoint.
+   - Network Status & Sync Engine: Use a 'navigator.onLine' event listener to toggle an active "Online / Offline" badge in the UI. 
+   - When transitioning from Offline to Online: Automatically trigger a background sync function that iterates through the local queue, sends the payloads sequentially to the Express API, and clears the queue upon confirmed server 201 responses. Display a temporary "Syncing background data..." loader and a success toast notice.
+
+2. Automated PDF Report Generation:
+   - Add a "Export Audit Report" button on the dashboard.
+   - Use 'jspdf' and 'jspdf-autotable' to generate a professional, clean PDF document.
+   - The PDF must include:
+     * A formal header: "INFRASTRUCTURE AUDIT REPORT" with a timestamp.
+     * Summary Metrics: Total active issues and current Regional Health Score.
+     * A structured table detailing: Issue Title, Type (Pavement Distress, Drainage, etc.), Severity, and Latitude/Longitude coordinates.
+
+3. Interactive Dashboard & Health Scores:
+   - Main Dashboard View showing key metrics: Total Logs, Active Issues, and a dynamic "Regional Health Score" (Scale 0-100, deducting points automatically based on active issues and their severities: Critical = -15, Medium = -5, Low = -2).
+   - Use simple visual charts or Tailwind-styled progress bars to break down issues by Type and Severity.
+
+4. Leaflet Map View & Inspection Form:
+   - Map: Display color-coded markers (Red=Critical, Orange=Medium, Green=Low) with informative popups. Clicking anywhere on the map captures coordinates. If offline, display a banner: "Map tiles cached/unavailable offline, capturing GPS coordinates manually."
+   - Form Fields: Title, Issue Type (Dropdown), Severity (Dropdown), Description, and Auto-filled Latitude/Longitude.
+
+5. Full-Stack API Integration:
+   - Express backend endpoints: GET `/api/inspections` and POST `/api/inspections` (configured to accept arrays or single payloads for batch syncing).
+   - Provide realistic seed data on project launch so the app displays a pre-populated dashboard.
