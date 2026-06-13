@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, inspectionsTable } from "@workspace/db";
-import { eq, desc, count, and } from "drizzle-orm";
+import { db, inspectionsTable, activityLogTable } from "@workspace/db";
+import { eq, desc, count, and, isNotNull, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -88,6 +88,36 @@ router.get("/dashboard/recent", async (req, res) => {
     res.json(rows);
   } catch (err) {
     req.log.error({ err }, "Failed to get recent inspections");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /dashboard/engineers
+router.get("/dashboard/engineers", async (req, res) => {
+  try {
+    // Collect distinct (userId, displayName) pairs from activity log
+    const rows = await db
+      .select({
+        userId: activityLogTable.userId,
+        displayName: activityLogTable.userDisplayName,
+      })
+      .from(activityLogTable)
+      .where(isNotNull(activityLogTable.userId))
+      .orderBy(desc(activityLogTable.createdAt));
+
+    // De-duplicate by userId, keeping the most recent displayName
+    const seen = new Map<string, string>();
+    for (const row of rows) {
+      if (row.userId && !seen.has(row.userId)) {
+        seen.set(row.userId, row.displayName ?? "Engineer");
+      }
+    }
+
+    res.json(
+      Array.from(seen.entries()).map(([userId, displayName]) => ({ userId, displayName }))
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list engineers");
     res.status(500).json({ error: "Internal server error" });
   }
 });

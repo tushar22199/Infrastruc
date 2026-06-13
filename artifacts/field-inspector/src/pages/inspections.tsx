@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, Search, Filter, User } from "lucide-react";
+import { Database, Search, Filter, User, UserCheck, Inbox } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+
+type ViewMode = "all" | "mine" | "queue";
 
 export default function Inspections() {
   const { data: inspections, isLoading } = useListInspections({
@@ -18,7 +20,7 @@ export default function Inspections() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [ownerFilter, setOwnerFilter] = useState<"all" | "mine">("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("all");
 
   if (isLoading) {
     return (
@@ -30,20 +32,31 @@ export default function Inspections() {
     );
   }
 
-  const filteredInspections = (inspections ?? [])
+  const all = inspections ?? [];
+  const myCount = all.filter((i) => user && i.userId === user.id).length;
+  const queueCount = all.filter((i) => user && i.assignedTo === user.id).length;
+
+  const filteredInspections = all
     .filter((i) => {
       const matchesSearch =
         i.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.issueType.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" || i.status === statusFilter;
-      const matchesOwner =
-        ownerFilter === "all" || (ownerFilter === "mine" && user && i.userId === user.id);
-      return matchesSearch && matchesStatus && matchesOwner;
+      const matchesView =
+        viewMode === "all" ||
+        (viewMode === "mine" && user && i.userId === user.id) ||
+        (viewMode === "queue" && user && i.assignedTo === user.id);
+      return matchesSearch && matchesStatus && matchesView;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const myCount = (inspections ?? []).filter((i) => user && i.userId === user.id).length;
+  const emptyMessage =
+    viewMode === "mine"
+      ? "You have no inspections logged yet. Log your first one."
+      : viewMode === "queue"
+      ? "No inspections assigned to you. When a project lead assigns you one, it will appear here."
+      : "No inspections found matching criteria.";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -51,6 +64,61 @@ export default function Inspections() {
         <Database className="h-6 w-6 text-primary" />
         <h1 className="text-3xl font-bold tracking-tight uppercase">Audit Database</h1>
       </div>
+
+      {/* View mode tabs */}
+      <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg w-fit">
+        {(
+          [
+            { id: "all", label: "All Records", icon: Database, count: all.length },
+            { id: "mine", label: "My Logs", icon: User, count: myCount },
+            { id: "queue", label: "My Queue", icon: Inbox, count: queueCount },
+          ] as { id: ViewMode; label: string; icon: React.ElementType; count: number }[]
+        ).map((tab) => {
+          const Icon = tab.icon;
+          const active = viewMode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setViewMode(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
+                active
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              {tab.label}
+              {tab.count > 0 && (
+                <span
+                  className={`font-mono text-[9px] px-1.5 py-0.5 rounded-full ${
+                    active ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* My Queue banner */}
+      {viewMode === "queue" && (
+        <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+          <Inbox className="h-4 w-4 text-primary flex-shrink-0" />
+          <div>
+            <p className="text-xs font-bold text-primary uppercase tracking-wider">Your Assignment Queue</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Inspections assigned to you by a project lead. Open any record to update its status.
+            </p>
+          </div>
+          {queueCount > 0 && (
+            <span className="ml-auto text-xs font-mono bg-primary text-primary-foreground px-2 py-0.5 rounded font-bold">
+              {queueCount} open
+            </span>
+          )}
+        </div>
+      )}
 
       <Card className="bg-card border-card-border shadow-md">
         <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center flex-wrap">
@@ -67,7 +135,6 @@ export default function Inspections() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            {/* Status filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Filter Status" />
@@ -79,32 +146,11 @@ export default function Inspections() {
                 <SelectItem value="Resolved">Resolved</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Owner filter */}
-            <Select
-              value={ownerFilter}
-              onValueChange={(v) => setOwnerFilter(v as "all" | "mine")}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Owner" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Engineers</SelectItem>
-                <SelectItem value="mine">
-                  <span className="flex items-center gap-1.5">
-                    <User className="h-3 w-3" />
-                    My Inspections {myCount > 0 ? `(${myCount})` : ""}
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          {ownerFilter === "mine" && (
-            <div className="text-xs font-mono text-primary bg-primary/10 px-3 py-1 rounded-md ml-auto">
-              Showing {filteredInspections.length} of your logs
-            </div>
-          )}
+          <div className="ml-auto text-xs font-mono text-muted-foreground">
+            {filteredInspections.length} record{filteredInspections.length !== 1 ? "s" : ""}
+          </div>
         </CardContent>
       </Card>
 
@@ -119,25 +165,27 @@ export default function Inspections() {
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Status</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Date</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Logged By</TableHead>
+                <TableHead className="uppercase text-xs tracking-wider font-bold">Assigned</TableHead>
                 <TableHead className="text-right uppercase text-xs tracking-wider font-bold">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredInspections.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                    {ownerFilter === "mine"
-                      ? "You have no inspections logged yet. Log your first one."
-                      : "No inspections found matching criteria."}
+                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground text-sm">
+                    {emptyMessage}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredInspections.map((inspection) => {
                   const isOwn = user && inspection.userId === user.id;
+                  const isAssignedToMe = user && inspection.assignedTo === user.id;
                   return (
                     <TableRow
                       key={inspection.id}
-                      className="border-b-border hover:bg-secondary/50 transition-colors group"
+                      className={`border-b-border hover:bg-secondary/50 transition-colors group ${
+                        isAssignedToMe ? "bg-primary/5" : ""
+                      }`}
                     >
                       <TableCell>
                         <div className="font-mono text-xs text-muted-foreground mb-1">
@@ -181,6 +229,22 @@ export default function Inspections() {
                           </span>
                         ) : (
                           <span className="text-[10px] text-muted-foreground/50 font-mono">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {inspection.assignedTo ? (
+                          <span
+                            className={`text-[10px] font-mono flex items-center gap-1 ${
+                              isAssignedToMe ? "text-primary font-bold" : "text-muted-foreground"
+                            }`}
+                          >
+                            <UserCheck className="h-3 w-3" />
+                            {isAssignedToMe
+                              ? "YOU"
+                              : (inspection.assignedToName ?? inspection.assignedTo.slice(0, 8))}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/40 font-mono">—</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">

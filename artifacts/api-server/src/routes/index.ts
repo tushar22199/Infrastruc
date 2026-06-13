@@ -5,6 +5,7 @@ import inspectionsRouter from "./inspections";
 import dashboardRouter from "./dashboard";
 import notificationsRouter from "./notifications";
 import { activityRouter } from "./activity";
+import { assignRouter } from "./assign";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(inspectionsRouter);
 router.use(dashboardRouter);
 router.use(notificationsRouter);
 router.use(activityRouter);
+router.use(assignRouter);
 
 export default router;

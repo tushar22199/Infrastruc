@@ -23,9 +23,11 @@ import type {
   ActivityEvent,
   ApiError,
   AppNotification,
+  AssignInspectionInput,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
   DashboardSummary,
+  Engineer,
   ErrorEnvelope,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
@@ -1093,6 +1095,155 @@ export const useMarkNotificationRead = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getMarkNotificationReadMutationOptions(options));
     }
+
+export const getAssignInspectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/inspections/${id}/assign`
+}
+
+/**
+ * @summary Assign an inspection to an engineer
+ */
+export const assignInspection = async (id: number,
+    assignInspectionInput: AssignInspectionInput, options?: RequestInit): Promise<Inspection> => {
+
+  return customFetch<Inspection>(getAssignInspectionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assignInspectionInput,)
+  }
+);}
+
+
+
+
+export const getAssignInspectionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignInspection>>, TError,{id: number;data: BodyType<AssignInspectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignInspection>>, TError,{id: number;data: BodyType<AssignInspectionInput>}, TContext> => {
+
+const mutationKey = ['assignInspection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignInspection>>, {id: number;data: BodyType<AssignInspectionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  assignInspection(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignInspectionMutationResult = NonNullable<Awaited<ReturnType<typeof assignInspection>>>
+    export type AssignInspectionMutationBody = BodyType<AssignInspectionInput>
+    export type AssignInspectionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Assign an inspection to an engineer
+ */
+export const useAssignInspection = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignInspection>>, TError,{id: number;data: BodyType<AssignInspectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assignInspection>>,
+        TError,
+        {id: number;data: BodyType<AssignInspectionInput>},
+        TContext
+      > => {
+      return useMutation(getAssignInspectionMutationOptions(options));
+    }
+
+export const getListEngineersUrl = () => {
+
+
+
+
+  return `/api/dashboard/engineers`
+}
+
+/**
+ * @summary List engineers who have logged activity in the system
+ */
+export const listEngineers = async ( options?: RequestInit): Promise<Engineer[]> => {
+
+  return customFetch<Engineer[]>(getListEngineersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEngineersQueryKey = () => {
+    return [
+    `/api/dashboard/engineers`
+    ] as const;
+    }
+
+
+export const getListEngineersQueryOptions = <TData = Awaited<ReturnType<typeof listEngineers>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEngineers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEngineersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEngineers>>> = ({ signal }) => listEngineers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEngineers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEngineersQueryResult = NonNullable<Awaited<ReturnType<typeof listEngineers>>>
+export type ListEngineersQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List engineers who have logged activity in the system
+ */
+
+export function useListEngineers<TData = Awaited<ReturnType<typeof listEngineers>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEngineers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEngineersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListActivityEventsUrl = (params?: ListActivityEventsParams,) => {
   const normalizedParams = new URLSearchParams();

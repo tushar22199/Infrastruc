@@ -55,6 +55,10 @@ export interface Inspection {
   updatedAt?: string | null;
   /** @nullable */
   userId?: string | null;
+  /** @nullable */
+  assignedTo?: string | null;
+  /** @nullable */
+  assignedToName?: string | null;
 }
 
 export type InspectionInputIssueType = typeof InspectionInputIssueType[keyof typeof InspectionInputIssueType];
@@ -222,6 +226,18 @@ export const LogoutSuccessValue = {
   success: true,
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface Engineer {
+  userId: string;
+  displayName: string;
+}
+
+export interface AssignInspectionInput {
+  /** @minLength 1 */
+  userId: string;
+  /** @minLength 1 */
+  displayName: string;
+}
 
 export type ActivityEventEventType = typeof ActivityEventEventType[keyof typeof ActivityEventEventType];
 

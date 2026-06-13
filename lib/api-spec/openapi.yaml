@@ -277,6 +277,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /inspections/{id}/assign:
+    post:
+      operationId: assignInspection
+      tags: [inspections]
+      summary: Assign an inspection to an engineer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignInspectionInput"
+      responses:
+        "200":
+          description: Updated inspection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inspection"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /dashboard/engineers:
+    get:
+      operationId: listEngineers
+      tags: [dashboard]
+      summary: List engineers who have logged activity in the system
+      responses:
+        "200":
+          description: List of engineers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Engineer"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /activity:
     get:
       operationId: listActivityEvents
@@ -483,6 +547,10 @@ components:
           format: date-time
         userId:
           type: ["string", "null"]
+        assignedTo:
+          type: ["string", "null"]
+        assignedToName:
+          type: ["string", "null"]
 
     InspectionInput:
       type: object
@@ -682,6 +750,26 @@ components:
         success:
           type: boolean
           const: true
+    Engineer:
+      type: object
+      required: [userId, displayName]
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+
+    AssignInspectionInput:
+      type: object
+      required: [userId, displayName]
+      properties:
+        userId:
+          type: string
+          minLength: 1
+        displayName:
+          type: string
+          minLength: 1
+
     ActivityEvent:
       type: object
       required: [id, eventType, inspectionId, inspectionTitle, detail, createdAt]

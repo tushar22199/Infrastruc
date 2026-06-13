@@ -30,7 +30,9 @@ export const ListInspectionsResponseItem = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish()
+  "userId": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
+  "assignedToName": zod.string().nullish()
 })
 export const ListInspectionsResponse = zod.array(ListInspectionsResponseItem)
 
@@ -89,7 +91,9 @@ export const GetInspectionResponse = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish()
+  "userId": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
+  "assignedToName": zod.string().nullish()
 })
 
 
@@ -121,7 +125,9 @@ export const UpdateInspectionResponse = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish()
+  "userId": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
+  "assignedToName": zod.string().nullish()
 })
 
 
@@ -181,7 +187,9 @@ export const GetRecentInspectionsResponseItem = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish()
+  "userId": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
+  "assignedToName": zod.string().nullish()
 })
 export const GetRecentInspectionsResponse = zod.array(GetRecentInspectionsResponseItem)
 
@@ -227,6 +235,49 @@ export const MarkNotificationReadResponse = zod.object({
   "read": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Assign an inspection to an engineer
+ */
+export const AssignInspectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const AssignInspectionBody = zod.object({
+  "userId": zod.string().min(1),
+  "displayName": zod.string().min(1)
+})
+
+export const AssignInspectionResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "issueType": zod.enum(['Pavement Distress', 'Drainage', 'Structural Damage', 'Signage', 'Erosion', 'Bridge Deterioration', 'Utility Failure', 'Other']),
+  "severity": zod.enum(['Critical', 'Medium', 'Low']),
+  "description": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "status": zod.enum(['Active', 'Resolved', 'Under Review']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().nullish(),
+  "userId": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
+  "assignedToName": zod.string().nullish()
+})
+
+
+/**
+ * @summary List engineers who have logged activity in the system
+ */
+export const ListEngineersResponseItem = zod.object({
+  "userId": zod.string(),
+  "displayName": zod.string()
+})
+export const ListEngineersResponse = zod.array(ListEngineersResponseItem)
 
 
 /**

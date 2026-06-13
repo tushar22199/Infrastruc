@@ -1,6 +1,6 @@
 import { useGetInspection, getGetInspectionQueryKey, useUpdateInspection, InspectionUpdateStatus } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,7 @@ import L from "leaflet";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { AssignPanel } from "@/components/assign-panel";
 
 const createCustomIcon = (color: string) => {
   return L.divIcon({
@@ -184,6 +185,19 @@ export default function InspectionDetail() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-card-border shadow-md">
+            <CardHeader>
+              <CardTitle className="uppercase tracking-wider text-sm text-muted-foreground">Assignment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AssignPanel
+                inspectionId={inspection.id}
+                currentAssignedTo={inspection.assignedTo}
+                currentAssignedToName={inspection.assignedToName}
+              />
             </CardContent>
           </Card>
         </div>

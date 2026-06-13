@@ -23,4 +23,8 @@ export interface Inspection {
   updatedAt?: Date | null;
   /** @nullable */
   userId?: string | null;
+  /** @nullable */
+  assignedTo?: string | null;
+  /** @nullable */
+  assignedToName?: string | null;
 }
