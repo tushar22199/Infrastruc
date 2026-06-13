@@ -12,6 +12,15 @@ import {
 
 const router = Router();
 
+/** Compute the next reinspection timestamp from now */
+function computeNextDate(interval: string): Date {
+  const now = new Date();
+  if (interval === "weekly") return new Date(now.getTime() + 7 * 86_400_000);
+  if (interval === "monthly") return new Date(now.getTime() + 30 * 86_400_000);
+  if (interval === "quarterly") return new Date(now.getTime() + 90 * 86_400_000);
+  return now;
+}
+
 // GET /inspections
 router.get("/inspections", async (req, res) => {
   try {
@@ -39,6 +48,7 @@ router.post("/inspections", async (req, res) => {
       ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "Engineer"
       : "Engineer";
 
+    const interval = (parsed.data as any).reinspectionInterval as string | undefined;
     const [row] = await db
       .insert(inspectionsTable)
       .values({
@@ -50,6 +60,8 @@ router.post("/inspections", async (req, res) => {
         longitude: parsed.data.longitude,
         status: parsed.data.status ?? "Active",
         userId,
+        reinspectionInterval: interval ?? null,
+        nextReinspectionDate: interval ? computeNextDate(interval) : null,
       })
       .returning();
 
@@ -236,7 +248,15 @@ router.patch("/inspections/:id", async (req, res) => {
       return;
     }
 
+    // Bump nextReinspectionDate when a scheduled inspection transitions to Resolved
     const newStatus = bodyParsed.data.status;
+    if (newStatus === "Resolved" && existing.reinspectionInterval) {
+      await db
+        .update(inspectionsTable)
+        .set({ nextReinspectionDate: computeNextDate(existing.reinspectionInterval) })
+        .where(eq(inspectionsTable.id, paramsParsed.data.id));
+    }
+
     if (newStatus && newStatus !== existing.status) {
       const updaterName = req.isAuthenticated()
         ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "A team member"

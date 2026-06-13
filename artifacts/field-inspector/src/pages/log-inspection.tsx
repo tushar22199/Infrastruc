@@ -14,7 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { PlusSquare, Save, Navigation } from "lucide-react";
+import { PlusSquare, Save, Navigation, RefreshCw } from "lucide-react";
+
+const REINSPECTION_INTERVALS = [
+  { value: "none", label: "None — single inspection only" },
+  { value: "weekly", label: "Weekly — re-inspect every 7 days" },
+  { value: "monthly", label: "Monthly — re-inspect every 30 days" },
+  { value: "quarterly", label: "Quarterly — re-inspect every 90 days" },
+] as const;
 
 const formSchema = z.object({
   title: z.string().min(3, "Title is required"),
@@ -23,6 +30,7 @@ const formSchema = z.object({
   description: z.string().min(10, "Provide a detailed description"),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
+  reinspectionInterval: z.enum(["none", "weekly", "monthly", "quarterly"]).default("none"),
 });
 
 export default function LogInspection() {
@@ -46,6 +54,7 @@ export default function LogInspection() {
       description: "",
       latitude: initialLat ? parseFloat(initialLat) : 0,
       longitude: initialLng ? parseFloat(initialLng) : 0,
+      reinspectionInterval: "none",
     },
   });
 
@@ -71,9 +80,11 @@ export default function LogInspection() {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const { reinspectionInterval, ...rest } = values;
     const payload = {
-      ...values,
-      status: "Active" as const
+      ...rest,
+      status: "Active" as const,
+      ...(reinspectionInterval !== "none" ? { reinspectionInterval } : {}),
     };
 
     // Always queue first for offline-first architecture
@@ -199,6 +210,35 @@ export default function LogInspection() {
                     <FormControl>
                       <Textarea placeholder="Provide detailed notes on the infrastructure failure..." className="min-h-[120px]" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="reinspectionInterval"
+                render={({ field }) => (
+                  <FormItem className="pt-2 border-t border-border">
+                    <div className="flex items-center gap-2 mb-3">
+                      <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                      <FormLabel className="uppercase text-xs tracking-wider text-muted-foreground">Re-inspection Schedule</FormLabel>
+                    </div>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select schedule" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {REINSPECTION_INTERVALS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      When set, a re-inspection due date will be scheduled and flagged on the dashboard when overdue.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

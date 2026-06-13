@@ -425,6 +425,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /dashboard/overdue-reinspections:
+    get:
+      operationId: getOverdueReinspections
+      tags: [dashboard]
+      summary: Inspections whose next re-inspection date has passed
+      responses:
+        "200":
+          description: List of overdue re-inspections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OverdueReinspection"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /dashboard/hotspots:
     get:
       operationId: getHotspots
@@ -684,6 +705,12 @@ components:
           type: ["string", "null"]
         assignedToName:
           type: ["string", "null"]
+        reinspectionInterval:
+          type: ["string", "null"]
+          enum: [weekly, monthly, quarterly, "null"]
+        nextReinspectionDate:
+          type: ["string", "null"]
+          format: date-time
 
     InspectionInput:
       type: object
@@ -715,6 +742,9 @@ components:
         status:
           type: string
           enum: [Active, Resolved, Under Review]
+        reinspectionInterval:
+          type: string
+          enum: [weekly, monthly, quarterly]
 
     InspectionUpdate:
       type: object
@@ -744,6 +774,9 @@ components:
         status:
           type: string
           enum: [Active, Resolved, Under Review]
+        reinspectionInterval:
+          type: string
+          enum: [weekly, monthly, quarterly]
 
     InspectionBatchInput:
       type: object
@@ -883,6 +916,24 @@ components:
         success:
           type: boolean
           const: true
+    OverdueReinspection:
+      type: object
+      required: [id, title, severity, reinspectionInterval, nextReinspectionDate, daysOverdue]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        severity:
+          type: string
+        reinspectionInterval:
+          type: string
+        nextReinspectionDate:
+          type: string
+          format: date-time
+        daysOverdue:
+          type: integer
+
     BulkStatusUpdateBody:
       type: object
       required: [ids, status]

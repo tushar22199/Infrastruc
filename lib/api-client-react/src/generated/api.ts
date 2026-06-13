@@ -46,6 +46,7 @@ import type {
   MarkReadResult,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  OverdueReinspection,
   SeverityBreakdown,
   TypeBreakdown
 } from './api.schemas';
@@ -1393,6 +1394,83 @@ export const useAssignInspection = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getAssignInspectionMutationOptions(options));
     }
+
+export const getGetOverdueReinspectionsUrl = () => {
+
+
+
+
+  return `/api/dashboard/overdue-reinspections`
+}
+
+/**
+ * @summary Inspections whose next re-inspection date has passed
+ */
+export const getOverdueReinspections = async ( options?: RequestInit): Promise<OverdueReinspection[]> => {
+
+  return customFetch<OverdueReinspection[]>(getGetOverdueReinspectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOverdueReinspectionsQueryKey = () => {
+    return [
+    `/api/dashboard/overdue-reinspections`
+    ] as const;
+    }
+
+
+export const getGetOverdueReinspectionsQueryOptions = <TData = Awaited<ReturnType<typeof getOverdueReinspections>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOverdueReinspections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOverdueReinspectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOverdueReinspections>>> = ({ signal }) => getOverdueReinspections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOverdueReinspections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOverdueReinspectionsQueryResult = NonNullable<Awaited<ReturnType<typeof getOverdueReinspections>>>
+export type GetOverdueReinspectionsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Inspections whose next re-inspection date has passed
+ */
+
+export function useGetOverdueReinspections<TData = Awaited<ReturnType<typeof getOverdueReinspections>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOverdueReinspections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOverdueReinspectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetHotspotsUrl = (params?: GetHotspotsParams,) => {
   const normalizedParams = new URLSearchParams();

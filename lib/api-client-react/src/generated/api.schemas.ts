@@ -41,6 +41,19 @@ export const InspectionStatus = {
   Under_Review: 'Under Review',
 } as const;
 
+/**
+ * @nullable
+ */
+export type InspectionReinspectionInterval = typeof InspectionReinspectionInterval[keyof typeof InspectionReinspectionInterval] | null;
+
+
+export const InspectionReinspectionInterval = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+  null: 'null',
+} as const;
+
 export interface Inspection {
   id: number;
   title: string;
@@ -59,6 +72,10 @@ export interface Inspection {
   assignedTo?: string | null;
   /** @nullable */
   assignedToName?: string | null;
+  /** @nullable */
+  reinspectionInterval?: InspectionReinspectionInterval;
+  /** @nullable */
+  nextReinspectionDate?: string | null;
 }
 
 export type InspectionInputIssueType = typeof InspectionInputIssueType[keyof typeof InspectionInputIssueType];
@@ -93,6 +110,15 @@ export const InspectionInputStatus = {
   Under_Review: 'Under Review',
 } as const;
 
+export type InspectionInputReinspectionInterval = typeof InspectionInputReinspectionInterval[keyof typeof InspectionInputReinspectionInterval];
+
+
+export const InspectionInputReinspectionInterval = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+} as const;
+
 export interface InspectionInput {
   /** @minLength 1 */
   title: string;
@@ -102,6 +128,7 @@ export interface InspectionInput {
   latitude: number;
   longitude: number;
   status?: InspectionInputStatus;
+  reinspectionInterval?: InspectionInputReinspectionInterval;
 }
 
 export type InspectionUpdateIssueType = typeof InspectionUpdateIssueType[keyof typeof InspectionUpdateIssueType];
@@ -136,6 +163,15 @@ export const InspectionUpdateStatus = {
   Under_Review: 'Under Review',
 } as const;
 
+export type InspectionUpdateReinspectionInterval = typeof InspectionUpdateReinspectionInterval[keyof typeof InspectionUpdateReinspectionInterval];
+
+
+export const InspectionUpdateReinspectionInterval = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+} as const;
+
 export interface InspectionUpdate {
   title?: string;
   issueType?: InspectionUpdateIssueType;
@@ -144,6 +180,7 @@ export interface InspectionUpdate {
   latitude?: number;
   longitude?: number;
   status?: InspectionUpdateStatus;
+  reinspectionInterval?: InspectionUpdateReinspectionInterval;
 }
 
 export interface InspectionBatchInput {
@@ -226,6 +263,15 @@ export const LogoutSuccessValue = {
   success: true,
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface OverdueReinspection {
+  id: number;
+  title: string;
+  severity: string;
+  reinspectionInterval: string;
+  nextReinspectionDate: string;
+  daysOverdue: number;
+}
 
 export type BulkStatusUpdateBodyStatus = typeof BulkStatusUpdateBodyStatus[keyof typeof BulkStatusUpdateBodyStatus];
 

@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, MapPin, Activity, Save } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Activity, Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -183,6 +183,26 @@ export default function InspectionDetail() {
                   <div>
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">Last Updated</div>
                     <div className="font-mono text-sm">{format(new Date(inspection.updatedAt), "PPpp")}</div>
+                  </div>
+                </div>
+              )}
+
+              {inspection.reinspectionInterval && (
+                <div className="pt-4 border-t border-border flex items-start gap-3">
+                  <RefreshCw className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Re-inspection Schedule</div>
+                    <div className="font-mono text-sm capitalize">{inspection.reinspectionInterval}</div>
+                    {inspection.nextReinspectionDate && (() => {
+                      const due = new Date(inspection.nextReinspectionDate);
+                      const isOverdue = due < new Date();
+                      return (
+                        <div className={`mt-1 text-xs font-mono flex items-center gap-1 ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}>
+                          {isOverdue && <AlertTriangle className="h-3 w-3" />}
+                          {isOverdue ? "Overdue since " : "Due "}{format(due, "MMM d, yyyy")}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

@@ -1,8 +1,8 @@
-import { useGetDashboardSummary, useGetByType, useGetBySeverity, useListInspections, useGetHotspots, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, useGetByType, useGetBySeverity, useListInspections, useGetHotspots, useGetOverdueReinspections, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Download, AlertTriangle, CheckCircle, Activity, LayoutDashboard, Flame, MapPin } from "lucide-react";
+import { Download, AlertTriangle, CheckCircle, Activity, LayoutDashboard, Flame, MapPin, RefreshCw, Clock } from "lucide-react";
 import { exportAuditReport } from "@/lib/pdf-export";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const { data: severityBreakdown, isLoading: isLoadingSeverities } = useGetBySeverity();
   const { data: inspections, isLoading: isLoadingInspections } = useListInspections();
   const { data: hotspots } = useGetHotspots();
+  const { data: overdueItems } = useGetOverdueReinspections();
 
   const handleExport = () => {
     if (summary && inspections) {

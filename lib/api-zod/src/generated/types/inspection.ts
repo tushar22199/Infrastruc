@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InspectionIssueType } from './inspectionIssueType';
+import type { InspectionReinspectionInterval } from './inspectionReinspectionInterval';
 import type { InspectionSeverity } from './inspectionSeverity';
 import type { InspectionStatus } from './inspectionStatus';
 
@@ -27,4 +28,8 @@ export interface Inspection {
   assignedTo?: string | null;
   /** @nullable */
   assignedToName?: string | null;
+  /** @nullable */
+  reinspectionInterval?: InspectionReinspectionInterval;
+  /** @nullable */
+  nextReinspectionDate?: Date | null;
 }

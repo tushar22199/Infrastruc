@@ -28,6 +28,8 @@ export const inspectionsTable = pgTable("inspections", {
   userId: text("user_id"),
   assignedTo: text("assigned_to"),
   assignedToName: text("assigned_to_name"),
+  reinspectionInterval: text("reinspection_interval"), // 'weekly' | 'monthly' | 'quarterly' | null
+  nextReinspectionDate: timestamp("next_reinspection_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InspectionInputIssueType } from './inspectionInputIssueType';
+import type { InspectionInputReinspectionInterval } from './inspectionInputReinspectionInterval';
 import type { InspectionInputSeverity } from './inspectionInputSeverity';
 import type { InspectionInputStatus } from './inspectionInputStatus';
 
@@ -18,4 +19,5 @@ export interface InspectionInput {
   latitude: number;
   longitude: number;
   status?: InspectionInputStatus;
+  reinspectionInterval?: InspectionInputReinspectionInterval;
 }
