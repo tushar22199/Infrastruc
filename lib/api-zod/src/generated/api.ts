@@ -9,7 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -18,7 +17,6 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Returns all inspection records
  * @summary List all inspections
  */
 export const ListInspectionsResponseItem = zod.object({
@@ -32,14 +30,13 @@ export const ListInspectionsResponseItem = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish().describe('The Replit user ID of the engineer who logged this inspection')
+  "userId": zod.string().nullish()
 })
 export const ListInspectionsResponse = zod.array(ListInspectionsResponseItem)
 
 
 /**
- * Create a single inspection or batch array for offline sync
- * @summary Create one or more inspections
+ * @summary Create an inspection
  */
 
 
@@ -56,7 +53,6 @@ export const CreateInspectionBody = zod.object({
 
 
 /**
- * Accepts an array of inspections for bulk sync from local queue
  * @summary Batch create inspections (offline sync)
  */
 
@@ -93,7 +89,7 @@ export const GetInspectionResponse = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish().describe('The Replit user ID of the engineer who logged this inspection')
+  "userId": zod.string().nullish()
 })
 
 
@@ -125,7 +121,7 @@ export const UpdateInspectionResponse = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish().describe('The Replit user ID of the engineer who logged this inspection')
+  "userId": zod.string().nullish()
 })
 
 
@@ -138,14 +134,13 @@ export const DeleteInspectionParams = zod.object({
 
 
 /**
- * Returns total counts, health score, and breakdown by type and severity
  * @summary Dashboard summary metrics
  */
 export const GetDashboardSummaryResponse = zod.object({
   "totalLogs": zod.number(),
   "activeIssues": zod.number(),
   "resolvedIssues": zod.number(),
-  "regionalHealthScore": zod.number().describe('Score 0-100, deducted by severity of active issues'),
+  "regionalHealthScore": zod.number(),
   "criticalCount": zod.number(),
   "mediumCount": zod.number(),
   "lowCount": zod.number()
@@ -186,16 +181,59 @@ export const GetRecentInspectionsResponseItem = zod.object({
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
-  "userId": zod.string().nullish().describe('The Replit user ID of the engineer who logged this inspection')
+  "userId": zod.string().nullish()
 })
 export const GetRecentInspectionsResponse = zod.array(GetRecentInspectionsResponseItem)
+
+
+/**
+ * @summary List notifications for the current user
+ */
+export const ListNotificationsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "inspectionId": zod.number(),
+  "inspectionTitle": zod.string(),
+  "message": zod.string(),
+  "type": zod.string(),
+  "read": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem)
+
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  "updated": zod.number()
+})
+
+
+/**
+ * @summary Mark a single notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MarkNotificationReadResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "inspectionId": zod.number(),
+  "inspectionTitle": zod.string(),
+  "message": zod.string(),
+  "type": zod.string(),
+  "read": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
 
 
 /**
  * @summary Get the currently authenticated user
  */
 export const GetCurrentAuthUserHeader = zod.object({
-  "Authorization": zod.string().optional().describe('Opaque session token — Bearer <sid>.')
+  "Authorization": zod.string().optional()
 })
 
 export const GetCurrentAuthUserResponse = zod.object({
@@ -231,7 +269,7 @@ export const HandleBrowserLoginCallbackQueryParams = zod.object({
  * @summary Clear the session and begin OIDC logout
  */
 export const LogoutBrowserSessionHeader = zod.object({
-  "Authorization": zod.string().optional().describe('Opaque session token — Bearer <sid>.')
+  "Authorization": zod.string().optional()
 })
 
 
@@ -262,7 +300,7 @@ export const ExchangeMobileAuthorizationCodeResponse = zod.object({
  * @summary Delete a mobile session token
  */
 export const LogoutMobileSessionHeader = zod.object({
-  "Authorization": zod.string().optional().describe('Opaque session token — Bearer <sid>.')
+  "Authorization": zod.string().optional()
 })
 
 export const LogoutMobileSessionResponse = zod.object({

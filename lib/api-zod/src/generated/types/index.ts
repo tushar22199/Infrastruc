@@ -7,6 +7,7 @@
  */
 
 export * from './apiError';
+export * from './appNotification';
 export * from './authorizationSessionHeaderParameter';
 export * from './authUser';
 export * from './authUserEnvelope';
@@ -29,6 +30,7 @@ export * from './inspectionUpdateIssueType';
 export * from './inspectionUpdateSeverity';
 export * from './inspectionUpdateStatus';
 export * from './logoutSuccess';
+export * from './markReadResult';
 export * from './mobileTokenExchangeRequest';
 export * from './mobileTokenExchangeSuccess';
 export * from './severityBreakdown';

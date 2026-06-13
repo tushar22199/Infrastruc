@@ -1,9 +1,10 @@
 import { useOfflineSync } from "@/lib/offline-sync";
 import { Link, useLocation } from "wouter";
-import { Activity, Map as MapIcon, PlusSquare, Database, Menu, Wifi, WifiOff, User, LogOut, ChevronDown } from "lucide-react";
+import { Activity, Map as MapIcon, PlusSquare, Database, Menu, Wifi, WifiOff, LogOut, ChevronDown, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@workspace/replit-auth-web";
+import { NotificationBell } from "@/components/notification-bell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +64,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         })}
       </nav>
 
-      <div className="mt-auto border-t border-sidebar-border pt-4 space-y-2">
+      <div className="mt-auto border-t border-sidebar-border pt-4 space-y-1">
         {/* Connection status */}
         <div
           className={`flex items-center gap-2 text-xs font-mono px-3 py-2 rounded-md ${
@@ -82,6 +83,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {isSyncing && (
           <div className="text-xs text-muted-foreground px-3 animate-pulse">Syncing...</div>
         )}
+
+        {/* Notification bell */}
+        <NotificationBell />
 
         {/* User profile */}
         <DropdownMenu>
@@ -108,7 +112,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {displayName}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="text-xs text-destructive focus:text-destructive cursor-pointer">
+            <DropdownMenuItem
+              onClick={logout}
+              className="text-xs text-destructive focus:text-destructive cursor-pointer"
+            >
               <LogOut className="h-3 w-3 mr-2" />
               Sign Out
             </DropdownMenuItem>

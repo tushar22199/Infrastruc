@@ -10,7 +10,6 @@ export interface DashboardSummary {
   totalLogs: number;
   activeIssues: number;
   resolvedIssues: number;
-  /** Score 0-100, deducted by severity of active issues */
   regionalHealthScore: number;
   criticalCount: number;
   mediumCount: number;

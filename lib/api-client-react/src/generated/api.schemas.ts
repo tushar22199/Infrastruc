@@ -53,10 +53,7 @@ export interface Inspection {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  /**
-     * The Replit user ID of the engineer who logged this inspection
-     * @nullable
-     */
+  /** @nullable */
   userId?: string | null;
 }
 
@@ -153,7 +150,6 @@ export interface DashboardSummary {
   totalLogs: number;
   activeIssues: number;
   resolvedIssues: number;
-  /** Score 0-100, deducted by severity of active issues */
   regionalHealthScore: number;
   criticalCount: number;
   mediumCount: number;
@@ -168,6 +164,21 @@ export interface TypeBreakdown {
 export interface SeverityBreakdown {
   severity: string;
   count: number;
+}
+
+export interface AppNotification {
+  id: number;
+  userId: string;
+  inspectionId: number;
+  inspectionTitle: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface MarkReadResult {
+  updated: number;
 }
 
 export interface ApiError {
@@ -216,9 +227,6 @@ export interface ErrorEnvelope {
   error: string;
 }
 
-/**
- * Opaque session token — Bearer <sid>.
- */
 export type AuthorizationSessionHeaderParameter = string;
 
 export type BeginBrowserLoginParams = {

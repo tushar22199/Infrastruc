@@ -14,6 +14,8 @@ tags:
     description: Inspection log operations
   - name: dashboard
     description: Dashboard summary and analytics
+  - name: notifications
+    description: In-app notification feed
   - name: Auth
     description: Browser and mobile authentication endpoints.
 paths:
@@ -22,7 +24,6 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -36,7 +37,6 @@ paths:
       operationId: listInspections
       tags: [inspections]
       summary: List all inspections
-      description: Returns all inspection records
       responses:
         "200":
           description: List of inspections
@@ -49,8 +49,7 @@ paths:
     post:
       operationId: createInspection
       tags: [inspections]
-      summary: Create one or more inspections
-      description: Create a single inspection or batch array for offline sync
+      summary: Create an inspection
       requestBody:
         required: true
         content:
@@ -70,7 +69,6 @@ paths:
       operationId: batchCreateInspections
       tags: [inspections]
       summary: Batch create inspections (offline sync)
-      description: Accepts an array of inspections for bulk sync from local queue
       requestBody:
         required: true
         content:
@@ -159,7 +157,6 @@ paths:
       operationId: getDashboardSummary
       tags: [dashboard]
       summary: Dashboard summary metrics
-      description: Returns total counts, health score, and breakdown by type and severity
       responses:
         "200":
           description: Dashboard summary
@@ -212,6 +209,71 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Inspection"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for the current user
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppNotification"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /notifications/mark-all-read:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarkReadResult"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a single notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppNotification"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /auth/user:
     get:
@@ -335,14 +397,12 @@ components:
       name: Authorization
       in: header
       required: false
-      description: Opaque session token — Bearer <sid>.
       schema:
         type: string
     SessionCookie:
       name: sid
       in: cookie
       required: false
-      description: Browser session cookie.
       schema:
         type: string
 
@@ -352,21 +412,11 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
     Inspection:
       type: object
-      required:
-        - id
-        - title
-        - issueType
-        - severity
-        - description
-        - latitude
-        - longitude
-        - status
-        - createdAt
+      required: [id, title, issueType, severity, description, latitude, longitude, status, createdAt]
       properties:
         id:
           type: integer
@@ -403,17 +453,10 @@ components:
           format: date-time
         userId:
           type: ["string", "null"]
-          description: The Replit user ID of the engineer who logged this inspection
 
     InspectionInput:
       type: object
-      required:
-        - title
-        - issueType
-        - severity
-        - description
-        - latitude
-        - longitude
+      required: [title, issueType, severity, description, latitude, longitude]
       properties:
         title:
           type: string
@@ -473,8 +516,7 @@ components:
 
     InspectionBatchInput:
       type: object
-      required:
-        - inspections
+      required: [inspections]
       properties:
         inspections:
           type: array
@@ -483,14 +525,7 @@ components:
 
     DashboardSummary:
       type: object
-      required:
-        - totalLogs
-        - activeIssues
-        - resolvedIssues
-        - regionalHealthScore
-        - criticalCount
-        - mediumCount
-        - lowCount
+      required: [totalLogs, activeIssues, resolvedIssues, regionalHealthScore, criticalCount, mediumCount, lowCount]
       properties:
         totalLogs:
           type: integer
@@ -500,7 +535,6 @@ components:
           type: integer
         regionalHealthScore:
           type: integer
-          description: Score 0-100, deducted by severity of active issues
         criticalCount:
           type: integer
         mediumCount:
@@ -510,9 +544,7 @@ components:
 
     TypeBreakdown:
       type: object
-      required:
-        - issueType
-        - count
+      required: [issueType, count]
       properties:
         issueType:
           type: string
@@ -521,19 +553,45 @@ components:
 
     SeverityBreakdown:
       type: object
-      required:
-        - severity
-        - count
+      required: [severity, count]
       properties:
         severity:
           type: string
         count:
           type: integer
 
+    AppNotification:
+      type: object
+      required: [id, userId, inspectionId, inspectionTitle, message, type, read, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        inspectionId:
+          type: integer
+        inspectionTitle:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    MarkReadResult:
+      type: object
+      required: [updated]
+      properties:
+        updated:
+          type: integer
+
     ApiError:
       type: object
-      required:
-        - error
+      required: [error]
       properties:
         error:
           type: string

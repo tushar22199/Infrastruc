@@ -21,9 +21,6 @@ export interface Inspection {
   createdAt: Date;
   /** @nullable */
   updatedAt?: Date | null;
-  /**
-     * The Replit user ID of the engineer who logged this inspection
-     * @nullable
-     */
+  /** @nullable */
   userId?: string | null;
 }

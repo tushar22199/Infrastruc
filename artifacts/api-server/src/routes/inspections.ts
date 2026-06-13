@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, inspectionsTable } from "@workspace/db";
+import { db, inspectionsTable, notificationsTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import {
   CreateInspectionBody,
@@ -120,6 +120,16 @@ router.patch("/inspections/:id", async (req, res) => {
     return;
   }
   try {
+    // Fetch existing record to detect status change
+    const [existing] = await db
+      .select()
+      .from(inspectionsTable)
+      .where(eq(inspectionsTable.id, paramsParsed.data.id));
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
     const [row] = await db
       .update(inspectionsTable)
       .set({
@@ -132,6 +142,26 @@ router.patch("/inspections/:id", async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
+
+    // Fire notification if status changed and the inspection has an owner
+    const newStatus = bodyParsed.data.status;
+    if (newStatus && newStatus !== existing.status && existing.userId) {
+      const updaterName = req.isAuthenticated()
+        ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "A team member"
+        : "A team member";
+      const message = `Status changed from "${existing.status}" to "${newStatus}" by ${updaterName}.`;
+      db.insert(notificationsTable)
+        .values({
+          userId: existing.userId,
+          inspectionId: row.id,
+          inspectionTitle: row.title,
+          message,
+          type: "status_change",
+        })
+        .execute()
+        .catch((err: unknown) => req.log.error({ err }, "Failed to create notification"));
+    }
+
     res.json(row);
   } catch (err) {
     req.log.error({ err }, "Failed to update inspection");
