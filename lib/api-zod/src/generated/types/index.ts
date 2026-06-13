@@ -8,6 +8,7 @@
 
 export * from './activityEvent';
 export * from './activityEventEventType';
+export * from './addCommentInput';
 export * from './apiError';
 export * from './appNotification';
 export * from './assignInspectionInput';
@@ -22,6 +23,7 @@ export * from './handleBrowserLoginCallbackParams';
 export * from './healthStatus';
 export * from './inspection';
 export * from './inspectionBatchInput';
+export * from './inspectionComment';
 export * from './inspectionInput';
 export * from './inspectionInputIssueType';
 export * from './inspectionInputSeverity';

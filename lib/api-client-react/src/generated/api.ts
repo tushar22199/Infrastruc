@@ -21,6 +21,7 @@ import type {
 
 import type {
   ActivityEvent,
+  AddCommentInput,
   ApiError,
   AppNotification,
   AssignInspectionInput,
@@ -33,6 +34,7 @@ import type {
   HealthStatus,
   Inspection,
   InspectionBatchInput,
+  InspectionComment,
   InspectionInput,
   InspectionUpdate,
   ListActivityEventsParams,
@@ -1094,6 +1096,155 @@ export const useMarkNotificationRead = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getMarkNotificationReadMutationOptions(options));
+    }
+
+export const getListCommentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/inspections/${id}/comments`
+}
+
+/**
+ * @summary List field notes for an inspection
+ */
+export const listComments = async (id: number, options?: RequestInit): Promise<InspectionComment[]> => {
+
+  return customFetch<InspectionComment[]>(getListCommentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCommentsQueryKey = (id: number,) => {
+    return [
+    `/api/inspections/${id}/comments`
+    ] as const;
+    }
+
+
+export const getListCommentsQueryOptions = <TData = Awaited<ReturnType<typeof listComments>>, TError = ErrorType<ApiError>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCommentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listComments>>> = ({ signal }) => listComments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listComments>>>
+export type ListCommentsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List field notes for an inspection
+ */
+
+export function useListComments<TData = Awaited<ReturnType<typeof listComments>>, TError = ErrorType<ApiError>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/inspections/${id}/comments`
+}
+
+/**
+ * @summary Add a field note to an inspection
+ */
+export const addComment = async (id: number,
+    addCommentInput: AddCommentInput, options?: RequestInit): Promise<InspectionComment> => {
+
+  return customFetch<InspectionComment>(getAddCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      addCommentInput,)
+  }
+);}
+
+
+
+
+export const getAddCommentMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: number;data: BodyType<AddCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: number;data: BodyType<AddCommentInput>}, TContext> => {
+
+const mutationKey = ['addComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addComment>>, {id: number;data: BodyType<AddCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddCommentMutationResult = NonNullable<Awaited<ReturnType<typeof addComment>>>
+    export type AddCommentMutationBody = BodyType<AddCommentInput>
+    export type AddCommentMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Add a field note to an inspection
+ */
+export const useAddComment = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: number;data: BodyType<AddCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addComment>>,
+        TError,
+        {id: number;data: BodyType<AddCommentInput>},
+        TContext
+      > => {
+      return useMutation(getAddCommentMutationOptions(options));
     }
 
 export const getAssignInspectionUrl = (id: number,) => {

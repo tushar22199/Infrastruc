@@ -6,6 +6,7 @@ import dashboardRouter from "./dashboard";
 import notificationsRouter from "./notifications";
 import { activityRouter } from "./activity";
 import { assignRouter } from "./assign";
+import { commentsRouter } from "./comments";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(dashboardRouter);
 router.use(notificationsRouter);
 router.use(activityRouter);
 router.use(assignRouter);
+router.use(commentsRouter);
 
 export default router;

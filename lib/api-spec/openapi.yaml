@@ -277,6 +277,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /inspections/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [inspections]
+      summary: List field notes for an inspection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InspectionComment"
+        "404":
+          description: Inspection not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: addComment
+      tags: [inspections]
+      summary: Add a field note to an inspection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCommentInput"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InspectionComment"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Inspection not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /inspections/{id}/assign:
     post:
       operationId: assignInspection
@@ -750,6 +824,32 @@ components:
         success:
           type: boolean
           const: true
+    InspectionComment:
+      type: object
+      required: [id, inspectionId, body, createdAt]
+      properties:
+        id:
+          type: integer
+        inspectionId:
+          type: integer
+        userId:
+          type: ["string", "null"]
+        userDisplayName:
+          type: ["string", "null"]
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AddCommentInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+
     Engineer:
       type: object
       required: [userId, displayName]

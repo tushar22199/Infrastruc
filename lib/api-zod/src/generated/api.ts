@@ -238,6 +238,39 @@ export const MarkNotificationReadResponse = zod.object({
 
 
 /**
+ * @summary List field notes for an inspection
+ */
+export const ListCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "inspectionId": zod.number(),
+  "userId": zod.string().nullish(),
+  "userDisplayName": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCommentsResponse = zod.array(ListCommentsResponseItem)
+
+
+/**
+ * @summary Add a field note to an inspection
+ */
+export const AddCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const AddCommentBody = zod.object({
+  "body": zod.string().min(1)
+})
+
+
+/**
  * @summary Assign an inspection to an engineer
  */
 export const AssignInspectionParams = zod.object({

@@ -14,6 +14,7 @@ import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { AssignPanel } from "@/components/assign-panel";
+import { CommentsPanel } from "@/components/comments-panel";
 
 const createCustomIcon = (color: string) => {
   return L.divIcon({
@@ -202,6 +203,18 @@ export default function InspectionDetail() {
           </Card>
         </div>
       </div>
+
+      {/* Field Notes — full width below columns */}
+      <Card className="bg-card border-card-border shadow-md">
+        <CardHeader className="border-b border-border bg-secondary/20">
+          <CardTitle className="uppercase tracking-wider text-sm text-muted-foreground flex items-center gap-2">
+            Field Notes &amp; Investigation Log
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <CommentsPanel inspectionId={inspection.id} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

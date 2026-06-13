@@ -227,6 +227,22 @@ export const LogoutSuccessValue = {
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
 
+export interface InspectionComment {
+  id: number;
+  inspectionId: number;
+  /** @nullable */
+  userId?: string | null;
+  /** @nullable */
+  userDisplayName?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface AddCommentInput {
+  /** @minLength 1 */
+  body: string;
+}
+
 export interface Engineer {
   userId: string;
   displayName: string;
