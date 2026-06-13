@@ -44,6 +44,7 @@ router.post("/inspections", async (req, res) => {
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
         status: parsed.data.status ?? "Active",
+        userId: req.isAuthenticated() ? req.user.id : null,
       })
       .returning();
     res.status(201).json(row);
@@ -72,6 +73,7 @@ router.post("/inspections/batch", async (req, res) => {
           latitude: i.latitude,
           longitude: i.longitude,
           status: i.status ?? "Active",
+          userId: req.isAuthenticated() ? req.user.id : null,
         }))
       )
       .returning();

@@ -25,6 +25,7 @@ export const inspectionsTable = pgTable("inspections", {
   latitude: doublePrecision("latitude").notNull(),
   longitude: doublePrecision("longitude").notNull(),
   status: text("status").notNull().default("Active"),
+  userId: text("user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });

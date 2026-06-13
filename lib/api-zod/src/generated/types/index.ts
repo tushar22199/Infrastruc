@@ -7,7 +7,13 @@
  */
 
 export * from './apiError';
+export * from './authorizationSessionHeaderParameter';
+export * from './authUser';
+export * from './authUserEnvelope';
+export * from './beginBrowserLoginParams';
 export * from './dashboardSummary';
+export * from './errorEnvelope';
+export * from './handleBrowserLoginCallbackParams';
 export * from './healthStatus';
 export * from './inspection';
 export * from './inspectionBatchInput';
@@ -22,5 +28,8 @@ export * from './inspectionUpdate';
 export * from './inspectionUpdateIssueType';
 export * from './inspectionUpdateSeverity';
 export * from './inspectionUpdateStatus';
+export * from './logoutSuccess';
+export * from './mobileTokenExchangeRequest';
+export * from './mobileTokenExchangeSuccess';
 export * from './severityBreakdown';
 export * from './typeBreakdown';

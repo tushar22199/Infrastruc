@@ -114,7 +114,7 @@ export default function MapView() {
         </MapContainer>
         
         {/* CSS override for dark mode map (simple inversion filter) */}
-        <style dangerouslySetContents={{__html: `
+        <style dangerouslySetInnerHTML={{__html: `
           .map-tiles {
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
           }

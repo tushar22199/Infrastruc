@@ -143,7 +143,7 @@ export default function InspectionDetail() {
                 />
                 <Marker position={[inspection.latitude, inspection.longitude]} icon={icon} />
               </MapContainer>
-              <style dangerouslySetContents={{__html: `
+              <style dangerouslySetInnerHTML={{__html: `
                 .map-tiles { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
               `}} />
             </div>
