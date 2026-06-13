@@ -230,6 +230,28 @@ export const MarkNotificationReadResponse = zod.object({
 
 
 /**
+ * @summary List recent team-wide activity events
+ */
+export const listActivityEventsQueryLimitDefault = 50;
+
+export const ListActivityEventsQueryParams = zod.object({
+  "limit": zod.coerce.number().default(listActivityEventsQueryLimitDefault)
+})
+
+export const ListActivityEventsResponseItem = zod.object({
+  "id": zod.number(),
+  "eventType": zod.enum(['inspection_created', 'status_changed']),
+  "userId": zod.string().nullish(),
+  "userDisplayName": zod.string().nullish(),
+  "inspectionId": zod.number(),
+  "inspectionTitle": zod.string(),
+  "detail": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListActivityEventsResponse = zod.array(ListActivityEventsResponseItem)
+
+
+/**
  * @summary Get the currently authenticated user
  */
 export const GetCurrentAuthUserHeader = zod.object({

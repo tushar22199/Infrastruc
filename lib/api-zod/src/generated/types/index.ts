@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activityEvent';
+export * from './activityEventEventType';
 export * from './apiError';
 export * from './appNotification';
 export * from './authorizationSessionHeaderParameter';
@@ -29,6 +31,7 @@ export * from './inspectionUpdate';
 export * from './inspectionUpdateIssueType';
 export * from './inspectionUpdateSeverity';
 export * from './inspectionUpdateStatus';
+export * from './listActivityEventsParams';
 export * from './logoutSuccess';
 export * from './markReadResult';
 export * from './mobileTokenExchangeRequest';

@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActivityEvent,
   ApiError,
   AppNotification,
   AuthUserEnvelope,
@@ -32,6 +33,7 @@ import type {
   InspectionBatchInput,
   InspectionInput,
   InspectionUpdate,
+  ListActivityEventsParams,
   LogoutSuccess,
   MarkReadResult,
   MobileTokenExchangeRequest,
@@ -1091,6 +1093,90 @@ export const useMarkNotificationRead = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getMarkNotificationReadMutationOptions(options));
     }
+
+export const getListActivityEventsUrl = (params?: ListActivityEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/activity?${stringifiedParams}` : `/api/activity`
+}
+
+/**
+ * @summary List recent team-wide activity events
+ */
+export const listActivityEvents = async (params?: ListActivityEventsParams, options?: RequestInit): Promise<ActivityEvent[]> => {
+
+  return customFetch<ActivityEvent[]>(getListActivityEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListActivityEventsQueryKey = (params?: ListActivityEventsParams,) => {
+    return [
+    `/api/activity`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListActivityEventsQueryOptions = <TData = Awaited<ReturnType<typeof listActivityEvents>>, TError = ErrorType<ApiError>>(params?: ListActivityEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActivityEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListActivityEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listActivityEvents>>> = ({ signal }) => listActivityEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listActivityEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListActivityEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listActivityEvents>>>
+export type ListActivityEventsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List recent team-wide activity events
+ */
+
+export function useListActivityEvents<TData = Awaited<ReturnType<typeof listActivityEvents>>, TError = ErrorType<ApiError>>(
+ params?: ListActivityEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActivityEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListActivityEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetCurrentAuthUserUrl = () => {
 

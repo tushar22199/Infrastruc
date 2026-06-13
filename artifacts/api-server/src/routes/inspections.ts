@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, inspectionsTable, notificationsTable } from "@workspace/db";
+import { db, inspectionsTable, notificationsTable, activityLogTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import {
   CreateInspectionBody,
@@ -34,6 +34,11 @@ router.post("/inspections", async (req, res) => {
     return;
   }
   try {
+    const userId = req.isAuthenticated() ? req.user.id : null;
+    const userDisplayName = req.isAuthenticated()
+      ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "Engineer"
+      : "Engineer";
+
     const [row] = await db
       .insert(inspectionsTable)
       .values({
@@ -44,9 +49,23 @@ router.post("/inspections", async (req, res) => {
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
         status: parsed.data.status ?? "Active",
-        userId: req.isAuthenticated() ? req.user.id : null,
+        userId,
       })
       .returning();
+
+    // Log activity event (fire-and-forget)
+    db.insert(activityLogTable)
+      .values({
+        eventType: "inspection_created",
+        userId,
+        userDisplayName,
+        inspectionId: row.id,
+        inspectionTitle: row.title,
+        detail: `${userDisplayName} logged a new ${row.severity.toLowerCase()} severity ${row.issueType} inspection.`,
+      })
+      .execute()
+      .catch((err: unknown) => req.log.error({ err }, "Failed to log activity"));
+
     res.status(201).json(row);
   } catch (err) {
     req.log.error({ err }, "Failed to create inspection");
@@ -143,23 +162,40 @@ router.patch("/inspections/:id", async (req, res) => {
       return;
     }
 
-    // Fire notification if status changed and the inspection has an owner
     const newStatus = bodyParsed.data.status;
-    if (newStatus && newStatus !== existing.status && existing.userId) {
+    if (newStatus && newStatus !== existing.status) {
       const updaterName = req.isAuthenticated()
         ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "A team member"
         : "A team member";
+      const updaterId = req.isAuthenticated() ? req.user.id : null;
       const message = `Status changed from "${existing.status}" to "${newStatus}" by ${updaterName}.`;
-      db.insert(notificationsTable)
+
+      // Notify the inspection owner
+      if (existing.userId) {
+        db.insert(notificationsTable)
+          .values({
+            userId: existing.userId,
+            inspectionId: row.id,
+            inspectionTitle: row.title,
+            message,
+            type: "status_change",
+          })
+          .execute()
+          .catch((err: unknown) => req.log.error({ err }, "Failed to create notification"));
+      }
+
+      // Log team-wide activity event
+      db.insert(activityLogTable)
         .values({
-          userId: existing.userId,
+          eventType: "status_changed",
+          userId: updaterId,
+          userDisplayName: updaterName,
           inspectionId: row.id,
           inspectionTitle: row.title,
-          message,
-          type: "status_change",
+          detail: message,
         })
         .execute()
-        .catch((err: unknown) => req.log.error({ err }, "Failed to create notification"));
+        .catch((err: unknown) => req.log.error({ err }, "Failed to log activity"));
     }
 
     res.json(row);

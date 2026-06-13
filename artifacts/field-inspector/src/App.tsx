@@ -14,6 +14,7 @@ import MapView from "@/pages/map-view";
 import LogInspection from "@/pages/log-inspection";
 import Inspections from "@/pages/inspections";
 import InspectionDetail from "@/pages/inspection-detail";
+import ActivityPage from "@/pages/activity";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/log" component={LogInspection} />
         <Route path="/inspections" component={Inspections} />
         <Route path="/inspections/:id" component={InspectionDetail} />
+        <Route path="/activity" component={ActivityPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

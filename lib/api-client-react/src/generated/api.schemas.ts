@@ -223,11 +223,36 @@ export const LogoutSuccessValue = {
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
 
+export type ActivityEventEventType = typeof ActivityEventEventType[keyof typeof ActivityEventEventType];
+
+
+export const ActivityEventEventType = {
+  inspection_created: 'inspection_created',
+  status_changed: 'status_changed',
+} as const;
+
+export interface ActivityEvent {
+  id: number;
+  eventType: ActivityEventEventType;
+  /** @nullable */
+  userId?: string | null;
+  /** @nullable */
+  userDisplayName?: string | null;
+  inspectionId: number;
+  inspectionTitle: string;
+  detail: string;
+  createdAt: string;
+}
+
 export interface ErrorEnvelope {
   error: string;
 }
 
 export type AuthorizationSessionHeaderParameter = string;
+
+export type ListActivityEventsParams = {
+limit?: number;
+};
 
 export type BeginBrowserLoginParams = {
 returnTo?: string;

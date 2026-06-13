@@ -1,6 +1,6 @@
 import { useOfflineSync } from "@/lib/offline-sync";
 import { Link, useLocation } from "wouter";
-import { Activity, Map as MapIcon, PlusSquare, Database, Menu, Wifi, WifiOff, LogOut, ChevronDown, User } from "lucide-react";
+import { Activity, Map as MapIcon, PlusSquare, Database, Menu, Wifi, WifiOff, LogOut, ChevronDown, User, Rss } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -22,6 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Dashboard", icon: Activity },
     { href: "/map", label: "Map View", icon: MapIcon },
     { href: "/inspections", label: "Inspections", icon: Database },
+    { href: "/activity", label: "Team Activity", icon: Rss },
     { href: "/log", label: "Log Issue", icon: PlusSquare },
   ];
 

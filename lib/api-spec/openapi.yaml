@@ -16,6 +16,8 @@ tags:
     description: Dashboard summary and analytics
   - name: notifications
     description: In-app notification feed
+  - name: activity
+    description: Team-wide activity feed
   - name: Auth
     description: Browser and mobile authentication endpoints.
 paths:
@@ -270,6 +272,34 @@ paths:
                 $ref: "#/components/schemas/AppNotification"
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /activity:
+    get:
+      operationId: listActivityEvents
+      tags: [activity]
+      summary: List recent team-wide activity events
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Activity event list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEvent"
+        "500":
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -652,6 +682,28 @@ components:
         success:
           type: boolean
           const: true
+    ActivityEvent:
+      type: object
+      required: [id, eventType, inspectionId, inspectionTitle, detail, createdAt]
+      properties:
+        id:
+          type: integer
+        eventType:
+          type: string
+          enum: [inspection_created, status_changed]
+        userId:
+          type: [string, "null"]
+        userDisplayName:
+          type: [string, "null"]
+        inspectionId:
+          type: integer
+        inspectionTitle:
+          type: string
+        detail:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     ErrorEnvelope:
       type: object
       required: [error]
