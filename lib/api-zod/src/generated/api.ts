@@ -74,6 +74,22 @@ export const BatchCreateInspectionsBody = zod.object({
 
 
 /**
+ * @summary Update status on multiple inspections at once
+ */
+
+
+
+export const BulkUpdateStatusBody = zod.object({
+  "ids": zod.array(zod.number()).min(1),
+  "status": zod.enum(['Active', 'Under Review', 'Resolved'])
+})
+
+export const BulkUpdateStatusResponse = zod.object({
+  "updatedCount": zod.number()
+})
+
+
+/**
  * @summary Get a single inspection
  */
 export const GetInspectionParams = zod.object({

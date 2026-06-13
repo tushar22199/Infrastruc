@@ -27,6 +27,8 @@ import type {
   AssignInspectionInput,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  BulkStatusUpdateBody,
+  BulkStatusUpdateResult,
   DashboardSummary,
   Engineer,
   ErrorEnvelope,
@@ -354,6 +356,77 @@ export const useBatchCreateInspections = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getBatchCreateInspectionsMutationOptions(options));
+    }
+
+export const getBulkUpdateStatusUrl = () => {
+
+
+
+
+  return `/api/inspections/bulk-status`
+}
+
+/**
+ * @summary Update status on multiple inspections at once
+ */
+export const bulkUpdateStatus = async (bulkStatusUpdateBody: BulkStatusUpdateBody, options?: RequestInit): Promise<BulkStatusUpdateResult> => {
+
+  return customFetch<BulkStatusUpdateResult>(getBulkUpdateStatusUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkStatusUpdateBody,)
+  }
+);}
+
+
+
+
+export const getBulkUpdateStatusMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkUpdateStatus>>, TError,{data: BodyType<BulkStatusUpdateBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkUpdateStatus>>, TError,{data: BodyType<BulkStatusUpdateBody>}, TContext> => {
+
+const mutationKey = ['bulkUpdateStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkUpdateStatus>>, {data: BodyType<BulkStatusUpdateBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkUpdateStatus(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkUpdateStatusMutationResult = NonNullable<Awaited<ReturnType<typeof bulkUpdateStatus>>>
+    export type BulkUpdateStatusMutationBody = BodyType<BulkStatusUpdateBody>
+    export type BulkUpdateStatusMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update status on multiple inspections at once
+ */
+export const useBulkUpdateStatus = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkUpdateStatus>>, TError,{data: BodyType<BulkStatusUpdateBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkUpdateStatus>>,
+        TError,
+        {data: BodyType<BulkStatusUpdateBody>},
+        TContext
+      > => {
+      return useMutation(getBulkUpdateStatusMutationOptions(options));
     }
 
 export const getGetInspectionUrl = (id: number,) => {

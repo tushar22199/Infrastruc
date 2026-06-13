@@ -1,26 +1,39 @@
 import { useState } from "react";
-import { useListInspections, getListInspectionsQueryKey } from "@workspace/api-client-react";
+import { useListInspections, useBulkUpdateStatus, getListInspectionsQueryKey, type BulkStatusUpdateBodyStatus } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, Search, Filter, User, UserCheck, Inbox } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Database, Search, Filter, User, UserCheck, Inbox, CheckSquare, X, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
 type ViewMode = "all" | "mine" | "queue";
+
+const STATUS_OPTIONS = ["Active", "Under Review", "Resolved"] as const;
 
 export default function Inspections() {
   const { data: inspections, isLoading } = useListInspections({
     query: { queryKey: getListInspectionsQueryKey() },
   });
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { mutateAsync: bulkUpdate, isPending: isBulkPending } = useBulkUpdateStatus();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<BulkStatusUpdateBodyStatus>("Active");
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -51,6 +64,54 @@ export default function Inspections() {
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  const filteredIds = filteredInspections.map((i) => i.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
+  const someFilteredSelected = filteredIds.some((id) => selectedIds.has(id));
+
+  const toggleAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filteredIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filteredIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+    setBulkResult(null);
+  };
+
+  const toggleOne = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setBulkResult(null);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setBulkResult(null);
+  };
+
+  const applyBulkStatus = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const result = await bulkUpdate({ data: { ids: Array.from(selectedIds), status: bulkStatus } });
+      await queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
+      setBulkResult(`${result.updatedCount} inspection${result.updatedCount !== 1 ? "s" : ""} updated to "${bulkStatus}".`);
+      setSelectedIds(new Set());
+    } catch {
+      setBulkResult("Update failed — please try again.");
+    }
+  };
+
   const emptyMessage =
     viewMode === "mine"
       ? "You have no inspections logged yet. Log your first one."
@@ -79,7 +140,7 @@ export default function Inspections() {
           return (
             <button
               key={tab.id}
-              onClick={() => setViewMode(tab.id)}
+              onClick={() => { setViewMode(tab.id); clearSelection(); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${
                 active
                   ? "bg-card text-foreground shadow-sm"
@@ -120,22 +181,22 @@ export default function Inspections() {
         </div>
       )}
 
+      {/* Search / filter bar */}
       <Card className="bg-card border-card-border shadow-md">
         <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center flex-wrap">
-          {/* Search */}
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search records..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); clearSelection(); }}
               className="pl-9 font-mono"
             />
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); clearSelection(); }}>
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Filter Status" />
               </SelectTrigger>
@@ -154,11 +215,76 @@ export default function Inspections() {
         </CardContent>
       </Card>
 
+      {/* Bulk action toolbar — slides in when rows are selected */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg border border-primary/30 bg-primary/5 animate-in slide-in-from-top-2 duration-200">
+          <CheckSquare className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="text-sm font-bold text-primary uppercase tracking-wider">
+            {selectedIds.size} selected
+          </span>
+
+          <div className="flex items-center gap-2 ml-2">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Set status to</span>
+            <Select value={bulkStatus} onValueChange={(v) => setBulkStatus(v as BulkStatusUpdateBodyStatus)}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              disabled={isBulkPending}
+              onClick={applyBulkStatus}
+              className="h-8 text-xs font-bold uppercase tracking-wider"
+            >
+              {isBulkPending ? (
+                <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> Applying…</>
+              ) : (
+                "Apply"
+              )}
+            </Button>
+          </div>
+
+          <button
+            onClick={clearSelection}
+            className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-3 w-3" /> Clear
+          </button>
+        </div>
+      )}
+
+      {/* Bulk result toast */}
+      {bulkResult && (
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border ${
+          bulkResult.includes("failed") ? "bg-destructive/10 border-destructive/30 text-destructive" : "bg-green-500/10 border-green-500/30 text-green-400"
+        }`}>
+          {bulkResult}
+          <button onClick={() => setBulkResult(null)} className="ml-auto opacity-60 hover:opacity-100">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Table */}
       <Card className="bg-card border-card-border shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-secondary/50">
               <TableRow className="border-b-border">
+                <TableHead className="w-10 pl-4">
+                  <Checkbox
+                    checked={allFilteredSelected}
+                    data-state={someFilteredSelected && !allFilteredSelected ? "indeterminate" : undefined}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all"
+                    className="border-muted-foreground/40"
+                  />
+                </TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">ID / Title</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Type</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Severity</TableHead>
@@ -172,7 +298,7 @@ export default function Inspections() {
             <TableBody>
               {filteredInspections.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground text-sm">
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground text-sm">
                     {emptyMessage}
                   </TableCell>
                 </TableRow>
@@ -180,13 +306,22 @@ export default function Inspections() {
                 filteredInspections.map((inspection) => {
                   const isOwn = user && inspection.userId === user.id;
                   const isAssignedToMe = user && inspection.assignedTo === user.id;
+                  const isSelected = selectedIds.has(inspection.id);
                   return (
                     <TableRow
                       key={inspection.id}
                       className={`border-b-border hover:bg-secondary/50 transition-colors group ${
-                        isAssignedToMe ? "bg-primary/5" : ""
+                        isSelected ? "bg-primary/5 hover:bg-primary/8" : isAssignedToMe ? "bg-primary/5" : ""
                       }`}
                     >
+                      <TableCell className="pl-4">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleOne(inspection.id)}
+                          aria-label={`Select inspection ${inspection.id}`}
+                          className="border-muted-foreground/40"
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-mono text-xs text-muted-foreground mb-1">
                           #{inspection.id.toString().padStart(4, "0")}

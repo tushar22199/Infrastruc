@@ -227,6 +227,25 @@ export const LogoutSuccessValue = {
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
 
+export type BulkStatusUpdateBodyStatus = typeof BulkStatusUpdateBodyStatus[keyof typeof BulkStatusUpdateBodyStatus];
+
+
+export const BulkStatusUpdateBodyStatus = {
+  Active: 'Active',
+  Under_Review: 'Under Review',
+  Resolved: 'Resolved',
+} as const;
+
+export interface BulkStatusUpdateBody {
+  /** @minItems 1 */
+  ids: number[];
+  status: BulkStatusUpdateBodyStatus;
+}
+
+export interface BulkStatusUpdateResult {
+  updatedCount: number;
+}
+
 export interface Hotspot {
   id: number;
   centerLat: number;

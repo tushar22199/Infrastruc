@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, inspectionsTable, notificationsTable, activityLogTable } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, inArray } from "drizzle-orm";
 import {
   CreateInspectionBody,
   BatchCreateInspectionsBody,
@@ -99,6 +99,80 @@ router.post("/inspections/batch", async (req, res) => {
     res.status(201).json(rows);
   } catch (err) {
     req.log.error({ err }, "Failed to batch create inspections");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /inspections/bulk-status  (must be registered BEFORE /:id to avoid route conflict)
+router.patch("/inspections/bulk-status", async (req, res) => {
+  const { ids, status } = req.body as { ids?: unknown; status?: unknown };
+
+  if (
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
+    !ids.every((id) => typeof id === "number" && Number.isInteger(id)) ||
+    !["Active", "Under Review", "Resolved"].includes(status as string)
+  ) {
+    res.status(400).json({ error: "ids must be a non-empty array of integers and status must be a valid value" });
+    return;
+  }
+
+  const validIds = ids as number[];
+  const newStatus = status as string;
+
+  try {
+    const updaterName = req.isAuthenticated()
+      ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "A team member"
+      : "A team member";
+    const updaterId = req.isAuthenticated() ? req.user.id : null;
+
+    // Fetch existing records to detect status changes per item
+    const existing = await db
+      .select()
+      .from(inspectionsTable)
+      .where(inArray(inspectionsTable.id, validIds));
+
+    // Perform the bulk update
+    const updated = await db
+      .update(inspectionsTable)
+      .set({ status: newStatus, updatedAt: new Date() })
+      .where(inArray(inspectionsTable.id, validIds))
+      .returning();
+
+    // Fire notifications + activity for items whose status actually changed
+    const changed = existing.filter((e) => e.status !== newStatus);
+    for (const row of changed) {
+      const message = `Status changed from "${row.status}" to "${newStatus}" by ${updaterName} (bulk update).`;
+
+      if (row.userId) {
+        db.insert(notificationsTable)
+          .values({
+            userId: row.userId,
+            inspectionId: row.id,
+            inspectionTitle: row.title,
+            message,
+            type: "status_change",
+          })
+          .execute()
+          .catch((err: unknown) => req.log.error({ err }, "Failed to create bulk notification"));
+      }
+
+      db.insert(activityLogTable)
+        .values({
+          eventType: "status_changed",
+          userId: updaterId,
+          userDisplayName: updaterName,
+          inspectionId: row.id,
+          inspectionTitle: row.title,
+          detail: message,
+        })
+        .execute()
+        .catch((err: unknown) => req.log.error({ err }, "Failed to log bulk activity"));
+    }
+
+    res.json({ updatedCount: updated.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to bulk update status");
     res.status(500).json({ error: "Internal server error" });
   }
 });

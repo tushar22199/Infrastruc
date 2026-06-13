@@ -87,6 +87,37 @@ paths:
                 items:
                   $ref: "#/components/schemas/Inspection"
 
+  /inspections/bulk-status:
+    patch:
+      operationId: bulkUpdateStatus
+      tags: [inspections]
+      summary: Update status on multiple inspections at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkStatusUpdateBody"
+      responses:
+        "200":
+          description: Updated count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkStatusUpdateResult"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /inspections/{id}:
     get:
       operationId: getInspection
@@ -852,6 +883,26 @@ components:
         success:
           type: boolean
           const: true
+    BulkStatusUpdateBody:
+      type: object
+      required: [ids, status]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+        status:
+          type: string
+          enum: [Active, Under Review, Resolved]
+
+    BulkStatusUpdateResult:
+      type: object
+      required: [updatedCount]
+      properties:
+        updatedCount:
+          type: integer
+
     Hotspot:
       type: object
       required: [id, centerLat, centerLng, count, radiusKm, inspectionIds, titles]
