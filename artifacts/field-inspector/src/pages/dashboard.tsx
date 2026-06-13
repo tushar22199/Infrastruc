@@ -1,8 +1,8 @@
-import { useGetDashboardSummary, useGetByType, useGetBySeverity, useListInspections, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, useGetByType, useGetBySeverity, useListInspections, useGetHotspots, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Download, AlertTriangle, CheckCircle, Activity, LayoutDashboard } from "lucide-react";
+import { Download, AlertTriangle, CheckCircle, Activity, LayoutDashboard, Flame, MapPin } from "lucide-react";
 import { exportAuditReport } from "@/lib/pdf-export";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -11,7 +11,8 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
   const { data: typeBreakdown, isLoading: isLoadingTypes } = useGetByType();
   const { data: severityBreakdown, isLoading: isLoadingSeverities } = useGetBySeverity();
-  const { data: inspections, isLoading: isLoadingInspections } = useListInspections(); // Fallback for recent inspections
+  const { data: inspections, isLoading: isLoadingInspections } = useListInspections();
+  const { data: hotspots } = useGetHotspots();
 
   const handleExport = () => {
     if (summary && inspections) {
@@ -53,6 +54,46 @@ export default function Dashboard() {
           Export Audit Report
         </Button>
       </div>
+
+      {/* Hotspot Alerts */}
+      {hotspots && hotspots.length > 0 && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Flame className="h-5 w-5 text-destructive animate-pulse" />
+            <span className="font-bold uppercase tracking-wider text-destructive text-sm">
+              {hotspots.length} Critical Hotspot{hotspots.length > 1 ? "s" : ""} Detected
+            </span>
+            <span className="text-xs text-muted-foreground ml-auto">
+              Clusters of active Critical inspections within {hotspots[0]?.radiusKm ?? 10} km
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {hotspots.map((h) => (
+              <Link key={h.id} href={`/map?hotspot=${h.id}&lat=${h.centerLat}&lng=${h.centerLng}`}>
+                <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-card p-3 hover:border-destructive/60 transition-colors cursor-pointer group">
+                  <div className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-destructive/10 border border-destructive/30 flex items-center justify-center">
+                    <span className="text-destructive font-bold font-mono text-sm">{h.count}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono mb-1">
+                      <MapPin className="h-3 w-3" />
+                      <span>{h.centerLat.toFixed(4)}, {h.centerLng.toFixed(4)}</span>
+                    </div>
+                    <ul className="space-y-0.5">
+                      {h.titles.slice(0, 2).map((title, i) => (
+                        <li key={i} className="text-xs text-foreground truncate">{title}</li>
+                      ))}
+                      {h.titles.length > 2 && (
+                        <li className="text-xs text-muted-foreground">+{h.titles.length - 2} more</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card border-card-border shadow-md">

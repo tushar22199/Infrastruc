@@ -30,8 +30,10 @@ import type {
   DashboardSummary,
   Engineer,
   ErrorEnvelope,
+  GetHotspotsParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
+  Hotspot,
   Inspection,
   InspectionBatchInput,
   InspectionComment,
@@ -1318,6 +1320,90 @@ export const useAssignInspection = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getAssignInspectionMutationOptions(options));
     }
+
+export const getGetHotspotsUrl = (params?: GetHotspotsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/dashboard/hotspots?${stringifiedParams}` : `/api/dashboard/hotspots`
+}
+
+/**
+ * @summary Detect geographic clusters of critical active inspections
+ */
+export const getHotspots = async (params?: GetHotspotsParams, options?: RequestInit): Promise<Hotspot[]> => {
+
+  return customFetch<Hotspot[]>(getGetHotspotsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHotspotsQueryKey = (params?: GetHotspotsParams,) => {
+    return [
+    `/api/dashboard/hotspots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetHotspotsQueryOptions = <TData = Awaited<ReturnType<typeof getHotspots>>, TError = ErrorType<ApiError>>(params?: GetHotspotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHotspots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHotspotsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHotspots>>> = ({ signal }) => getHotspots(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHotspots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHotspotsQueryResult = NonNullable<Awaited<ReturnType<typeof getHotspots>>>
+export type GetHotspotsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Detect geographic clusters of critical active inspections
+ */
+
+export function useGetHotspots<TData = Awaited<ReturnType<typeof getHotspots>>, TError = ErrorType<ApiError>>(
+ params?: GetHotspotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHotspots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHotspotsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListEngineersUrl = () => {
 

@@ -7,6 +7,7 @@ import notificationsRouter from "./notifications";
 import { activityRouter } from "./activity";
 import { assignRouter } from "./assign";
 import { commentsRouter } from "./comments";
+import { hotspotsRouter } from "./hotspots";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(notificationsRouter);
 router.use(activityRouter);
 router.use(assignRouter);
 router.use(commentsRouter);
+router.use(hotspotsRouter);
 
 export default router;

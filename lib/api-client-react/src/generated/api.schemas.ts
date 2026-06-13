@@ -227,6 +227,16 @@ export const LogoutSuccessValue = {
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
 
+export interface Hotspot {
+  id: number;
+  centerLat: number;
+  centerLng: number;
+  count: number;
+  radiusKm: number;
+  inspectionIds: number[];
+  titles: string[];
+}
+
 export interface InspectionComment {
   id: number;
   inspectionId: number;
@@ -281,6 +291,10 @@ export interface ErrorEnvelope {
 }
 
 export type AuthorizationSessionHeaderParameter = string;
+
+export type GetHotspotsParams = {
+radiusKm?: number;
+};
 
 export type ListActivityEventsParams = {
 limit?: number;

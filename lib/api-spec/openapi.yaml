@@ -394,6 +394,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /dashboard/hotspots:
+    get:
+      operationId: getHotspots
+      tags: [dashboard]
+      summary: Detect geographic clusters of critical active inspections
+      parameters:
+        - name: radiusKm
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 10
+      responses:
+        "200":
+          description: List of hotspot clusters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hotspot"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /dashboard/engineers:
     get:
       operationId: listEngineers
@@ -824,6 +852,29 @@ components:
         success:
           type: boolean
           const: true
+    Hotspot:
+      type: object
+      required: [id, centerLat, centerLng, count, radiusKm, inspectionIds, titles]
+      properties:
+        id:
+          type: integer
+        centerLat:
+          type: number
+        centerLng:
+          type: number
+        count:
+          type: integer
+        radiusKm:
+          type: number
+        inspectionIds:
+          type: array
+          items:
+            type: integer
+        titles:
+          type: array
+          items:
+            type: string
+
     InspectionComment:
       type: object
       required: [id, inspectionId, body, createdAt]

@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import { useListInspections } from "@workspace/api-client-react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { useEffect, useRef } from "react";
+import { useListInspections, useGetHotspots } from "@workspace/api-client-react";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle, Map as MapIcon } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame } from "lucide-react";
 import { useOfflineSync } from "@/lib/offline-sync";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 
 // Fix standard Leaflet icon issue in Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,8 +16,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom markers using standard leaflet colors but tinted via CSS/hue or custom SVGs if possible
-// We will use divIcon for custom colored markers
 const createCustomIcon = (color: string) => {
   return L.divIcon({
     className: 'custom-div-icon',
@@ -27,9 +25,9 @@ const createCustomIcon = (color: string) => {
   });
 };
 
-const iconCritical = createCustomIcon('#ef4444'); // destructive
-const iconMedium = createCustomIcon('#f59e0b'); // primary/amber
-const iconLow = createCustomIcon('#22c55e'); // green
+const iconCritical = createCustomIcon('#ef4444');
+const iconMedium = createCustomIcon('#f59e0b');
+const iconLow = createCustomIcon('#22c55e');
 
 function MapEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({
@@ -40,13 +38,31 @@ function MapEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => v
   return null;
 }
 
+/** Fly to a given lat/lng when they change */
+function FlyToHotspot({ lat, lng }: { lat: number | null; lng: number | null }) {
+  const map = useMap();
+  const didFly = useRef(false);
+  useEffect(() => {
+    if (lat !== null && lng !== null && !didFly.current) {
+      didFly.current = true;
+      map.flyTo([lat, lng], 13, { duration: 1.2 });
+    }
+  }, [lat, lng, map]);
+  return null;
+}
+
 export default function MapView() {
   const { data: inspections } = useListInspections();
+  const { data: hotspots } = useGetHotspots();
   const { isOnline } = useOfflineSync();
   const [, setLocation] = useLocation();
+  const search = useSearch();
+
+  const params = new URLSearchParams(search);
+  const focusLat = params.has("lat") ? Number(params.get("lat")) : null;
+  const focusLng = params.has("lng") ? Number(params.get("lng")) : null;
 
   const handleMapClick = (lat: number, lng: number) => {
-    // Navigate to log page with coordinates
     setLocation(`/log?lat=${lat}&lng=${lng}`);
   };
 
@@ -55,6 +71,12 @@ export default function MapView() {
       <div className="flex items-center gap-2">
         <MapIcon className="h-6 w-6 text-primary" />
         <h1 className="text-3xl font-bold tracking-tight uppercase">Map View</h1>
+        {hotspots && hotspots.length > 0 && (
+          <span className="ml-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold uppercase tracking-wider">
+            <Flame className="h-3 w-3" />
+            {hotspots.length} hotspot{hotspots.length > 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
       {!isOnline && (
@@ -68,7 +90,7 @@ export default function MapView() {
         <MapContainer 
           center={[37.7749, -122.4194]} 
           zoom={12} 
-          style={{ height: "100%", width: "100%", background: "#1a1f26" }} // dark background for map container
+          style={{ height: "100%", width: "100%", background: "#1a1f26" }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -76,7 +98,43 @@ export default function MapView() {
             className="map-tiles"
           />
           <MapEvents onMapClick={handleMapClick} />
-          
+          {focusLat !== null && focusLng !== null && (
+            <FlyToHotspot lat={focusLat} lng={focusLng} />
+          )}
+
+          {/* Hotspot radius circles */}
+          {hotspots?.map((h) => (
+            <Circle
+              key={`hotspot-${h.id}`}
+              center={[h.centerLat, h.centerLng]}
+              radius={h.radiusKm * 1000}
+              pathOptions={{
+                color: "#ef4444",
+                fillColor: "#ef4444",
+                fillOpacity: 0.08,
+                weight: 1.5,
+                dashArray: "6 4",
+              }}
+            >
+              <Popup>
+                <div className="p-1 space-y-2">
+                  <div className="flex items-center gap-1 font-bold text-destructive text-sm border-b border-border pb-1">
+                    <span>⚠ Hotspot — {h.count} Critical Issues</span>
+                  </div>
+                  <ul className="space-y-1 mt-1">
+                    {h.titles.map((title, i) => (
+                      <li key={i} className="text-xs text-foreground">• {title}</li>
+                    ))}
+                  </ul>
+                  <div className="text-xs text-muted-foreground font-mono mt-1">
+                    {h.radiusKm} km radius · {h.centerLat.toFixed(4)}, {h.centerLng.toFixed(4)}
+                  </div>
+                </div>
+              </Popup>
+            </Circle>
+          ))}
+
+          {/* Inspection markers */}
           {inspections?.map((inspection) => {
             const icon = inspection.severity === 'Critical' ? iconCritical : 
                          inspection.severity === 'Medium' ? iconMedium : iconLow;
@@ -113,7 +171,6 @@ export default function MapView() {
           })}
         </MapContainer>
         
-        {/* CSS override for dark mode map (simple inversion filter) */}
         <style dangerouslySetInnerHTML={{__html: `
           .map-tiles {
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);

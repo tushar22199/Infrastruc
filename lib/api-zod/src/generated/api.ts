@@ -304,6 +304,27 @@ export const AssignInspectionResponse = zod.object({
 
 
 /**
+ * @summary Detect geographic clusters of critical active inspections
+ */
+export const getHotspotsQueryRadiusKmDefault = 10;
+
+export const GetHotspotsQueryParams = zod.object({
+  "radiusKm": zod.coerce.number().default(getHotspotsQueryRadiusKmDefault)
+})
+
+export const GetHotspotsResponseItem = zod.object({
+  "id": zod.number(),
+  "centerLat": zod.number(),
+  "centerLng": zod.number(),
+  "count": zod.number(),
+  "radiusKm": zod.number(),
+  "inspectionIds": zod.array(zod.number()),
+  "titles": zod.array(zod.string())
+})
+export const GetHotspotsResponse = zod.array(GetHotspotsResponseItem)
+
+
+/**
  * @summary List engineers who have logged activity in the system
  */
 export const ListEngineersResponseItem = zod.object({
