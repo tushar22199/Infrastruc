@@ -53,6 +53,18 @@ async function refreshIfExpired(
   }
 }
 
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+}
+
 export async function authMiddleware(
   req: Request,
   res: Response,
