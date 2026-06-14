@@ -76,6 +76,8 @@ export interface Inspection {
   reinspectionInterval?: InspectionReinspectionInterval;
   /** @nullable */
   nextReinspectionDate?: string | null;
+  /** @nullable */
+  imageData?: string | null;
 }
 
 export type InspectionInputIssueType = typeof InspectionInputIssueType[keyof typeof InspectionInputIssueType];
@@ -129,6 +131,7 @@ export interface InspectionInput {
   longitude: number;
   status?: InspectionInputStatus;
   reinspectionInterval?: InspectionInputReinspectionInterval;
+  imageData?: string;
 }
 
 export type InspectionUpdateIssueType = typeof InspectionUpdateIssueType[keyof typeof InspectionUpdateIssueType];
@@ -181,6 +184,7 @@ export interface InspectionUpdate {
   longitude?: number;
   status?: InspectionUpdateStatus;
   reinspectionInterval?: InspectionUpdateReinspectionInterval;
+  imageData?: string;
 }
 
 export interface InspectionBatchInput {

@@ -96,6 +96,37 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Overdue Re-inspection Alerts */}
+      {overdueItems && overdueItems.length > 0 && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-amber-500" />
+            <span className="font-bold uppercase tracking-wider text-amber-500 text-sm">
+              {overdueItems.length} Overdue Re-inspection{overdueItems.length > 1 ? "s" : ""}
+            </span>
+            <span className="text-xs text-muted-foreground ml-auto">Scheduled re-inspections past their due date</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {overdueItems.map((item) => (
+              <Link key={item.id} href={`/inspections/${item.id}`}>
+                <div className="flex items-start gap-3 rounded-md border border-amber-500/20 bg-card p-3 hover:border-amber-500/50 transition-colors cursor-pointer group">
+                  <div className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-foreground truncate">{item.title}</div>
+                    <div className="text-[10px] font-mono text-amber-500 mt-0.5 capitalize">{item.reinspectionInterval} · {item.daysOverdue}d overdue</div>
+                    <div className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${
+                      item.severity === "Critical" ? "text-destructive" : item.severity === "Medium" ? "text-primary" : "text-green-500"
+                    }`}>{item.severity}</div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card border-card-border shadow-md">
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">

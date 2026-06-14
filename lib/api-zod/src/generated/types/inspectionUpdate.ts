@@ -19,4 +19,5 @@ export interface InspectionUpdate {
   longitude?: number;
   status?: InspectionUpdateStatus;
   reinspectionInterval?: InspectionUpdateReinspectionInterval;
+  imageData?: string;
 }

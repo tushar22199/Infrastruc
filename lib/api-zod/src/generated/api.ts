@@ -34,7 +34,8 @@ export const ListInspectionsResponseItem = zod.object({
   "assignedTo": zod.string().nullish(),
   "assignedToName": zod.string().nullish(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly', 'null']).nullish(),
-  "nextReinspectionDate": zod.coerce.date().nullish()
+  "nextReinspectionDate": zod.coerce.date().nullish(),
+  "imageData": zod.string().nullish()
 })
 export const ListInspectionsResponse = zod.array(ListInspectionsResponseItem)
 
@@ -53,7 +54,8 @@ export const CreateInspectionBody = zod.object({
   "latitude": zod.number(),
   "longitude": zod.number(),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']).optional(),
-  "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional()
+  "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional(),
+  "imageData": zod.string().optional()
 })
 
 
@@ -72,7 +74,8 @@ export const BatchCreateInspectionsBody = zod.object({
   "latitude": zod.number(),
   "longitude": zod.number(),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']).optional(),
-  "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional()
+  "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional(),
+  "imageData": zod.string().optional()
 }))
 })
 
@@ -115,7 +118,8 @@ export const GetInspectionResponse = zod.object({
   "assignedTo": zod.string().nullish(),
   "assignedToName": zod.string().nullish(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly', 'null']).nullish(),
-  "nextReinspectionDate": zod.coerce.date().nullish()
+  "nextReinspectionDate": zod.coerce.date().nullish(),
+  "imageData": zod.string().nullish()
 })
 
 
@@ -134,7 +138,8 @@ export const UpdateInspectionBody = zod.object({
   "latitude": zod.number().optional(),
   "longitude": zod.number().optional(),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']).optional(),
-  "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional()
+  "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional(),
+  "imageData": zod.string().optional()
 })
 
 export const UpdateInspectionResponse = zod.object({
@@ -152,7 +157,8 @@ export const UpdateInspectionResponse = zod.object({
   "assignedTo": zod.string().nullish(),
   "assignedToName": zod.string().nullish(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly', 'null']).nullish(),
-  "nextReinspectionDate": zod.coerce.date().nullish()
+  "nextReinspectionDate": zod.coerce.date().nullish(),
+  "imageData": zod.string().nullish()
 })
 
 
@@ -216,7 +222,8 @@ export const GetRecentInspectionsResponseItem = zod.object({
   "assignedTo": zod.string().nullish(),
   "assignedToName": zod.string().nullish(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly', 'null']).nullish(),
-  "nextReinspectionDate": zod.coerce.date().nullish()
+  "nextReinspectionDate": zod.coerce.date().nullish(),
+  "imageData": zod.string().nullish()
 })
 export const GetRecentInspectionsResponse = zod.array(GetRecentInspectionsResponseItem)
 
@@ -328,7 +335,8 @@ export const AssignInspectionResponse = zod.object({
   "assignedTo": zod.string().nullish(),
   "assignedToName": zod.string().nullish(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly', 'null']).nullish(),
-  "nextReinspectionDate": zod.coerce.date().nullish()
+  "nextReinspectionDate": zod.coerce.date().nullish(),
+  "imageData": zod.string().nullish()
 })
 
 

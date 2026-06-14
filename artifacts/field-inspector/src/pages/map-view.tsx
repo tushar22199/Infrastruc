@@ -158,6 +158,13 @@ export default function MapView() {
                         inspection.severity === 'Medium' ? 'text-primary' : 'text-green-500'
                       }`}>{inspection.severity}</span>
                     </div>
+                    {inspection.imageData && (
+                      <img
+                        src={inspection.imageData}
+                        alt="Site photo"
+                        className="mt-2 w-full rounded object-cover max-h-32 border border-border"
+                      />
+                    )}
                     <p className="text-sm mt-2 line-clamp-3 text-muted-foreground">{inspection.description}</p>
                     <div className="mt-3 pt-2 border-t border-border">
                       <Link href={`/inspections/${inspection.id}`} className="text-primary hover:underline text-sm font-bold uppercase tracking-wider">

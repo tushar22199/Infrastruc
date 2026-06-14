@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Database, Search, Filter, User, UserCheck, Inbox, CheckSquare, X, Loader2 } from "lucide-react";
+import { Database, Search, Filter, User, UserCheck, Inbox, CheckSquare, X, Loader2, ImageIcon } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
@@ -285,6 +285,7 @@ export default function Inspections() {
                     className="border-muted-foreground/40"
                   />
                 </TableHead>
+                <TableHead className="w-12 uppercase text-xs tracking-wider font-bold">Photo</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">ID / Title</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Type</TableHead>
                 <TableHead className="uppercase text-xs tracking-wider font-bold">Severity</TableHead>
@@ -298,7 +299,7 @@ export default function Inspections() {
             <TableBody>
               {filteredInspections.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground text-sm">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground text-sm">
                     {emptyMessage}
                   </TableCell>
                 </TableRow>
@@ -321,6 +322,19 @@ export default function Inspections() {
                           aria-label={`Select inspection ${inspection.id}`}
                           className="border-muted-foreground/40"
                         />
+                      </TableCell>
+                      <TableCell className="w-12">
+                        {inspection.imageData ? (
+                          <img
+                            src={inspection.imageData}
+                            alt="site photo"
+                            className="w-10 h-10 rounded object-cover border border-border"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded border border-border/40 bg-secondary/30 flex items-center justify-center">
+                            <ImageIcon className="h-4 w-4 text-muted-foreground/30" />
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="font-mono text-xs text-muted-foreground mb-1">

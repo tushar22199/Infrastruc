@@ -711,6 +711,8 @@ components:
         nextReinspectionDate:
           type: ["string", "null"]
           format: date-time
+        imageData:
+          type: ["string", "null"]
 
     InspectionInput:
       type: object
@@ -745,6 +747,8 @@ components:
         reinspectionInterval:
           type: string
           enum: [weekly, monthly, quarterly]
+        imageData:
+          type: string
 
     InspectionUpdate:
       type: object
@@ -777,6 +781,8 @@ components:
         reinspectionInterval:
           type: string
           enum: [weekly, monthly, quarterly]
+        imageData:
+          type: string
 
     InspectionBatchInput:
       type: object

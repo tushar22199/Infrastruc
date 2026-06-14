@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,6 +7,7 @@ import { useCreateInspection, useListInspections, getListInspectionsQueryKey, In
 import { useOfflineSync } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { compressImageToBase64 } from "@/lib/image-compress";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { PlusSquare, Save, Navigation, RefreshCw } from "lucide-react";
+import { PlusSquare, Save, Navigation, RefreshCw, Camera, X, ImageIcon, Loader2 } from "lucide-react";
 
 const REINSPECTION_INTERVALS = [
   { value: "none", label: "None — single inspection only" },
@@ -44,6 +45,12 @@ export default function LogInspection() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isLocating, setIsLocating] = useState(false);
+
+  // Image state
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,15 +86,46 @@ export default function LogInspection() {
     }
   };
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+
+    setIsCompressing(true);
+    try {
+      const compressed = await compressImageToBase64(file);
+      setImageData(compressed);
+      setImagePreview(compressed);
+      const kb = Math.round((compressed.length * 3) / 4 / 1024);
+      toast({ title: "Photo attached", description: `Compressed to ~${kb} KB and ready to submit.` });
+    } catch {
+      toast({ title: "Compression failed", description: "Could not process image.", variant: "destructive" });
+    } finally {
+      setIsCompressing(false);
+      // Reset input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = () => {
+    setImageData(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const { reinspectionInterval, ...rest } = values;
-    const payload = {
+    const payload: any = {
       ...rest,
       status: "Active" as const,
       ...(reinspectionInterval !== "none" ? { reinspectionInterval } : {}),
+      ...(imageData ? { imageData } : {}),
     };
 
-    // Always queue first for offline-first architecture
     addToQueue(payload);
 
     if (isOnline) {
@@ -95,14 +133,8 @@ export default function LogInspection() {
         { data: payload },
         {
           onSuccess: () => {
-            // Remove from queue logic is handled by the sync process in a real robust offline system,
-            // but for simplicity here we assume syncQueue will pick it up or we just let it sync automatically.
-            // A more robust implementation would remove specifically this item.
             queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
-            toast({
-              title: "Inspection Logged",
-              description: "Successfully submitted to server.",
-            });
+            toast({ title: "Inspection Logged", description: "Successfully submitted to server." });
             setLocationStr("/inspections");
           },
           onError: () => {
@@ -115,10 +147,7 @@ export default function LogInspection() {
         }
       );
     } else {
-      toast({
-        title: "Saved Offline",
-        description: "Inspection saved to local queue. Will sync when online.",
-      });
+      toast({ title: "Saved Offline", description: "Inspection saved to local queue. Will sync when online." });
       setLocationStr("/");
     }
   };
@@ -215,6 +244,90 @@ export default function LogInspection() {
                 )}
               />
 
+              {/* Photo Capture */}
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Camera className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Photo Evidence</span>
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">(optional · max 200 KB)</span>
+                  </div>
+                  {!imagePreview && (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isCompressing}
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.removeAttribute("capture");
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        className="text-xs uppercase tracking-wider h-8"
+                      >
+                        <ImageIcon className="mr-1.5 h-3 w-3" />
+                        Gallery
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isCompressing}
+                        onClick={() => {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.setAttribute("capture", "environment");
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        className="text-xs uppercase tracking-wider h-8"
+                      >
+                        <Camera className="mr-1.5 h-3 w-3" />
+                        Camera
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+
+                {isCompressing && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/40 rounded-md p-3">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Compressing image…
+                  </div>
+                )}
+
+                {imagePreview && (
+                  <div className="relative rounded-md overflow-hidden border border-border">
+                    <img
+                      src={imagePreview}
+                      alt="Inspection photo preview"
+                      className="w-full max-h-64 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                      aria-label="Remove photo"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] font-mono px-2 py-1">
+                      Photo attached · ~{Math.round((imagePreview.length * 3) / 4 / 1024)} KB
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <FormField
                 control={form.control}
                 name="reinspectionInterval"
@@ -283,7 +396,7 @@ export default function LogInspection() {
                 </div>
               </div>
 
-              <Button type="submit" disabled={createMutation.isPending} className="w-full font-bold uppercase tracking-wider h-12">
+              <Button type="submit" disabled={createMutation.isPending || isCompressing} className="w-full font-bold uppercase tracking-wider h-12">
                 <Save className="mr-2 h-5 w-5" />
                 {createMutation.isPending ? "Submitting..." : "Submit Log"}
               </Button>

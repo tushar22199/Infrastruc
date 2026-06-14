@@ -28,8 +28,9 @@ export const inspectionsTable = pgTable("inspections", {
   userId: text("user_id"),
   assignedTo: text("assigned_to"),
   assignedToName: text("assigned_to_name"),
-  reinspectionInterval: text("reinspection_interval"), // 'weekly' | 'monthly' | 'quarterly' | null
+  reinspectionInterval: text("reinspection_interval"),
   nextReinspectionDate: timestamp("next_reinspection_date"),
+  imageData: text("image_data"), // Base64-encoded compressed image, nullable
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });

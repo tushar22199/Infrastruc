@@ -48,7 +48,9 @@ router.post("/inspections", async (req, res) => {
       ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "Engineer"
       : "Engineer";
 
-    const interval = (parsed.data as any).reinspectionInterval as string | undefined;
+    const anyData = parsed.data as any;
+    const interval = anyData.reinspectionInterval as string | undefined;
+    const imageData = anyData.imageData as string | undefined;
     const [row] = await db
       .insert(inspectionsTable)
       .values({
@@ -62,6 +64,7 @@ router.post("/inspections", async (req, res) => {
         userId,
         reinspectionInterval: interval ?? null,
         nextReinspectionDate: interval ? computeNextDate(interval) : null,
+        imageData: imageData ?? null,
       })
       .returning();
 

@@ -124,6 +124,23 @@ export default function InspectionDetail() {
             </CardContent>
           </Card>
 
+          {inspection.imageData && (
+            <Card className="bg-card border-card-border shadow-md overflow-hidden">
+              <CardHeader className="bg-secondary/30 border-b border-border py-3">
+                <CardTitle className="uppercase tracking-wider text-sm text-muted-foreground flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" /> Photo Evidence
+                </CardTitle>
+              </CardHeader>
+              <div className="relative">
+                <img
+                  src={inspection.imageData}
+                  alt="Inspection site photo"
+                  className="w-full max-h-80 object-cover"
+                />
+              </div>
+            </Card>
+          )}
+
           <Card className="bg-card border-card-border shadow-md overflow-hidden">
             <CardHeader className="bg-secondary/30 border-b border-border">
               <CardTitle className="uppercase tracking-wider text-sm text-muted-foreground flex items-center gap-2">

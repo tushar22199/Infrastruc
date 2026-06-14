@@ -32,4 +32,6 @@ export interface Inspection {
   reinspectionInterval?: InspectionReinspectionInterval;
   /** @nullable */
   nextReinspectionDate?: Date | null;
+  /** @nullable */
+  imageData?: string | null;
 }
