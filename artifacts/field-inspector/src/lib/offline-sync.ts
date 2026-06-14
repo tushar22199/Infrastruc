@@ -1,106 +1,114 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useBatchCreateInspections, InspectionInput } from "@workspace/api-client-react";
+import {
+  useBatchCreateInspections,
+  getListInspectionsQueryKey,
+  type InspectionInput,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLiveQuery } from "dexie-react-hooks";
+import { offlineDb } from "./offline-db";
 import { useToast } from "@/hooks/use-toast";
 
-const QUEUE_KEY = "pending_inspections";
+let syncInProgress = false;
+let rerunRequested = false;
 
 export function useOfflineSync() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [queueCount, setQueueCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
-  
-  const batchCreate = useBatchCreateInspections();
-  const mutationFnRef = useRef(batchCreate.mutate);
-  mutationFnRef.current = batchCreate.mutate;
+  const queryClient = useQueryClient();
 
-  const updateQueueCount = useCallback(() => {
-    try {
-      const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
-      setQueueCount(q.length);
-    } catch {
-      setQueueCount(0);
-    }
+  const batchCreate = useBatchCreateInspections();
+  const mutateAsyncRef = useRef(batchCreate.mutateAsync);
+  mutateAsyncRef.current = batchCreate.mutateAsync;
+
+  const queueCount = useLiveQuery(() => offlineDb.pendingInspections.count(), [], 0);
+
+  const addToQueue = useCallback(async (inspection: InspectionInput) => {
+    await offlineDb.pendingInspections.add({
+      queuedAt: Date.now(),
+      payload: inspection,
+    });
   }, []);
 
-  const addToQueue = useCallback((inspection: InspectionInput) => {
-    try {
-      const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
-      q.push(inspection);
-      localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
-      updateQueueCount();
-      return true;
-    } catch (e) {
-      console.error("Failed to queue inspection", e);
-      return false;
-    }
-  }, [updateQueueCount]);
-
-  const syncQueue = useCallback(() => {
+  const syncQueue = useCallback(async () => {
     if (!navigator.onLine) return;
-    
-    try {
-      const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]") as InspectionInput[];
-      if (q.length === 0) return;
 
-      setIsSyncing(true);
-      
-      mutationFnRef.current({ data: { inspections: q } }, {
-        onSuccess: () => {
-          localStorage.removeItem(QUEUE_KEY);
-          updateQueueCount();
+    // Acquire the lock synchronously — before any await — so concurrent callers
+    // (multiple hook instances, or StrictMode double-effects) cannot both read
+    // and push the same queued rows, which would create duplicate server records.
+    if (syncInProgress) {
+      rerunRequested = true;
+      return;
+    }
+    syncInProgress = true;
+    setIsSyncing(true);
+
+    try {
+      do {
+        rerunRequested = false;
+
+        const pending = await offlineDb.pendingInspections.orderBy("queuedAt").toArray();
+        if (pending.length === 0) break;
+
+        const ids = pending
+          .map((p) => p.id)
+          .filter((id): id is number => id !== undefined);
+        const inspections = pending.map((p) => p.payload);
+
+        try {
+          await mutateAsyncRef.current({ data: { inspections } });
+          // Clear only the rows we just synced (by id). Any rows queued during
+          // the in-flight push survive and are drained on the next iteration.
+          await offlineDb.pendingInspections.bulkDelete(ids);
+          queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
           toast({
             title: "Sync Complete",
-            description: `Successfully synced ${q.length} inspections to the server.`,
-            variant: "default"
+            description: `Successfully synced ${inspections.length} inspection${
+              inspections.length > 1 ? "s" : ""
+            } to the server.`,
           });
-        },
-        onError: () => {
+        } catch (e) {
+          console.error("Sync error", e);
           toast({
             title: "Sync Failed",
-            description: "Failed to sync background data. Will try again later.",
-            variant: "destructive"
+            description: "Couldn't sync queued inspections. Will retry automatically.",
+            variant: "destructive",
           });
-        },
-        onSettled: () => {
-          setIsSyncing(false);
+          break;
         }
-      });
-      
-    } catch (e) {
-      console.error("Sync error", e);
+      } while (rerunRequested || (await offlineDb.pendingInspections.count()) > 0);
+    } finally {
+      syncInProgress = false;
       setIsSyncing(false);
     }
-  }, [toast, updateQueueCount]);
+  }, [queryClient, toast]);
 
   useEffect(() => {
-    updateQueueCount();
-    
     const handleOnline = () => {
       setIsOnline(true);
-      syncQueue();
+      void syncQueue();
     };
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-    
-    // Initial sync check if online
+
     if (navigator.onLine) {
-      syncQueue();
+      void syncQueue();
     }
 
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [syncQueue, updateQueueCount]);
+  }, [syncQueue]);
 
   return {
     isOnline,
-    queueCount,
+    queueCount: queueCount ?? 0,
     isSyncing,
     addToQueue,
-    syncQueue
+    syncQueue,
   };
 }

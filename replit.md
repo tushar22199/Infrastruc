@@ -34,7 +34,7 @@ A full-stack offline-first web app for civil engineers to log, track, and analyz
 
 ## Architecture decisions
 
-- Offline-first: inspections are written to `localStorage` queue first, then synced to API. Background sync triggers automatically when reconnecting.
+- Offline-first: inspections are written to an async IndexedDB queue (Dexie, store `offline_inspections_db`) first, then drained by a background sync engine that batch-POSTs to the API and clears synced rows by id on 201. IndexedDB is the single source of truth — the form never does a direct POST in addition to enqueuing. Sync triggers on submit (when online) and on reconnect.
 - OpenAPI-first contract: spec drives Zod validation on the server and typed React Query hooks on the client — no manually written types.
 - Regional Health Score computed server-side from active issues: Critical = -15, Medium = -5, Low = -2 deducted from 100.
 - Leaflet map uses custom color-coded divIcon markers per severity; no heavy chart library needed for geo features.
@@ -44,7 +44,7 @@ A full-stack offline-first web app for civil engineers to log, track, and analyz
 
 - **Dashboard**: Total logs, active issues, Regional Health Score (0–100), breakdown by severity and type, Export Audit Report PDF button.
 - **Map View**: Color-coded markers (Red=Critical, Orange=Medium, Green=Low) with info popups. Click-to-capture coordinates for new inspections.
-- **Log Inspection**: Offline-first form. Saves to localStorage queue first, then syncs to API. Background sync with toast notification on reconnect.
+- **Log Inspection**: Offline-first form. Awaits saving to the IndexedDB queue first, then fires the background sync engine. A "N items waiting to sync" indicator under the Online/Offline badge shows the live unsynced count. Background sync with toast notification on reconnect.
 - **Inspections List**: Searchable, filterable table of all records with status badges.
 - **Inspection Detail**: Full record view with embedded map, status update capability.
 

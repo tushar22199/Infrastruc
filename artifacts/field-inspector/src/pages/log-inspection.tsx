@@ -3,10 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLocation } from "wouter";
-import { useCreateInspection, useListInspections, getListInspectionsQueryKey, InspectionInputIssueType, InspectionInputSeverity } from "@workspace/api-client-react";
+import { InspectionInputIssueType, InspectionInputSeverity } from "@workspace/api-client-react";
 import { useOfflineSync } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
 import { compressImageToBase64 } from "@/lib/image-compress";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -40,11 +39,10 @@ export default function LogInspection() {
   const initialLat = searchParams.get("lat");
   const initialLng = searchParams.get("lng");
 
-  const { addToQueue, isOnline } = useOfflineSync();
-  const createMutation = useCreateInspection();
-  const queryClient = useQueryClient();
+  const { addToQueue, syncQueue, isOnline } = useOfflineSync();
   const { toast } = useToast();
   const [isLocating, setIsLocating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Image state
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -117,7 +115,7 @@ export default function LogInspection() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { reinspectionInterval, ...rest } = values;
     const payload: any = {
       ...rest,
@@ -126,34 +124,30 @@ export default function LogInspection() {
       ...(imageData ? { imageData } : {}),
     };
 
-    if (!isOnline) {
-      // Offline: save to queue only, no direct POST
-      addToQueue(payload);
-      toast({ title: "Saved Offline", description: "Inspection saved to local queue. Will sync when online." });
-      setLocationStr("/");
+    setIsSubmitting(true);
+    try {
+      // Offline-first: persist to IndexedDB before firing the sync engine.
+      await addToQueue(payload);
+    } catch (e) {
+      console.error("Failed to save inspection locally", e);
+      toast({
+        title: "Save Failed",
+        description: "Couldn't save the inspection to local storage. Please try again.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
       return;
     }
 
-    // Online: attempt direct POST first; only fall back to queue on failure
-    createMutation.mutate(
-      { data: payload },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
-          toast({ title: "Inspection Logged", description: "Successfully submitted to server." });
-          setLocationStr("/inspections");
-        },
-        onError: () => {
-          // Direct POST failed — persist to queue for later sync
-          addToQueue(payload);
-          toast({
-            title: "Queued for Sync",
-            description: "Couldn't reach server. Inspection saved locally and will sync when connection is restored.",
-          });
-          setLocationStr("/");
-        },
-      }
-    );
+    if (isOnline) {
+      toast({ title: "Inspection Saved", description: "Saved locally — syncing to the server now." });
+      // Fire-and-forget background sync; the engine drains the queue and clears synced records.
+      void syncQueue();
+    } else {
+      toast({ title: "Saved Offline", description: "Inspection saved to local queue. Will sync when online." });
+    }
+
+    setLocationStr("/inspections");
   };
 
   return (
@@ -400,9 +394,9 @@ export default function LogInspection() {
                 </div>
               </div>
 
-              <Button type="submit" disabled={createMutation.isPending || isCompressing} className="w-full font-bold uppercase tracking-wider h-12">
+              <Button type="submit" disabled={isSubmitting || isCompressing} className="w-full font-bold uppercase tracking-wider h-12">
                 <Save className="mr-2 h-5 w-5" />
-                {createMutation.isPending ? "Submitting..." : "Submit Log"}
+                {isSubmitting ? "Saving..." : "Submit Log"}
               </Button>
             </form>
           </Form>

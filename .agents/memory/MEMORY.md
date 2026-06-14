@@ -1,0 +1,1 @@
+- [Offline sync architecture](offline-sync-architecture.md) — IndexedDB queue is single source of truth; never direct-POST+enqueue; acquire sync lock before any await; batch route must map all fields.

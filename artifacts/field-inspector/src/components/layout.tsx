@@ -76,13 +76,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {isOnline ? "SYS.ONLINE" : "SYS.OFFLINE"}
         </div>
         {queueCount > 0 && (
-          <div className="flex items-center justify-between text-xs px-3 py-2 bg-accent/10 text-accent rounded-md">
-            <span>Pending Sync</span>
-            <span className="font-mono bg-accent/20 px-1.5 py-0.5 rounded">{queueCount}</span>
+          <div className="text-xs text-muted-foreground px-3 py-0.5">
+            {isSyncing ? (
+              <span className="animate-pulse">Syncing {queueCount} item{queueCount > 1 ? "s" : ""}…</span>
+            ) : (
+              <span>
+                {queueCount} item{queueCount > 1 ? "s" : ""} waiting to sync
+              </span>
+            )}
           </div>
-        )}
-        {isSyncing && (
-          <div className="text-xs text-muted-foreground px-3 animate-pulse">Syncing...</div>
         )}
 
         {/* Notification bell */}
