@@ -1,6 +1,4 @@
 import { useOfflineSync } from "@/lib/offline-sync";
-import { registerLogoClick } from "@/lib/dev-mode";
-import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { Activity, Map as MapIcon, PlusSquare, Database, Menu, Wifi, WifiOff, LogOut, ChevronDown, User, Rss } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,18 +17,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isOnline, queueCount, isSyncing } = useOfflineSync();
   const { user, logout } = useAuth();
-  const { toast } = useToast();
-
-  const handleLogoClick = () => {
-    const { justUnlocked } = registerLogoClick();
-    if (justUnlocked) {
-      toast({
-        title: "Developer Mode Unlocked",
-        description: "The Developer Testing Panel is now visible on the Dashboard.",
-      });
-    }
-  };
-
   const navItems = [
     { href: "/", label: "Dashboard", icon: Activity },
     { href: "/map", label: "Map View", icon: MapIcon },
@@ -53,15 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground w-64 p-4">
-      <button
-        type="button"
-        onClick={handleLogoClick}
-        title="AUDITOR"
-        className="flex items-center gap-2 mb-8 px-2 select-none cursor-default focus:outline-none"
-      >
+      <div className="flex items-center gap-2 mb-8 px-2 select-none">
         <Activity className="h-6 w-6 text-primary" />
         <span className="font-bold tracking-tight text-lg leading-tight uppercase">AUDITOR</span>
-      </button>
+      </div>
 
       <nav className="flex-1 space-y-1">
         {navItems.map((item) => {
@@ -156,15 +137,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Header & Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden h-14 border-b border-border flex items-center justify-between px-4 bg-card">
-          <button
-            type="button"
-            onClick={handleLogoClick}
-            title="AUDITOR"
-            className="flex items-center gap-2 select-none focus:outline-none"
-          >
+          <div className="flex items-center gap-2 select-none">
             <Activity className="h-5 w-5 text-primary" />
             <span className="font-bold uppercase tracking-tight">AUDITOR</span>
-          </button>
+          </div>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">

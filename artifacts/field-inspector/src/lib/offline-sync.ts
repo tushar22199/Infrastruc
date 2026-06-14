@@ -49,9 +49,9 @@ export function useOfflineSync() {
       do {
         rerunRequested = false;
 
-        // Re-check connectivity before each batch: if the network drops (or is
-        // forced offline via the dev panel) mid-drain, stop here so rows queued
-        // after the toggle are not pushed until connectivity is restored.
+        // Re-check connectivity before each batch: if the network drops mid-drain,
+        // stop here so rows queued during the outage are not pushed until
+        // connectivity is restored.
         if (!getEffectiveOnline()) break;
 
         const pending = await offlineDb.pendingInspections.orderBy("queuedAt").toArray();
