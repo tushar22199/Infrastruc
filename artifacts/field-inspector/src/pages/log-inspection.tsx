@@ -126,30 +126,34 @@ export default function LogInspection() {
       ...(imageData ? { imageData } : {}),
     };
 
-    addToQueue(payload);
-
-    if (isOnline) {
-      createMutation.mutate(
-        { data: payload },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
-            toast({ title: "Inspection Logged", description: "Successfully submitted to server." });
-            setLocationStr("/inspections");
-          },
-          onError: () => {
-            toast({
-              title: "Queued for Sync",
-              description: "Server error. Inspection saved locally and will sync when available.",
-            });
-            setLocationStr("/");
-          }
-        }
-      );
-    } else {
+    if (!isOnline) {
+      // Offline: save to queue only, no direct POST
+      addToQueue(payload);
       toast({ title: "Saved Offline", description: "Inspection saved to local queue. Will sync when online." });
       setLocationStr("/");
+      return;
     }
+
+    // Online: attempt direct POST first; only fall back to queue on failure
+    createMutation.mutate(
+      { data: payload },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
+          toast({ title: "Inspection Logged", description: "Successfully submitted to server." });
+          setLocationStr("/inspections");
+        },
+        onError: () => {
+          // Direct POST failed — persist to queue for later sync
+          addToQueue(payload);
+          toast({
+            title: "Queued for Sync",
+            description: "Couldn't reach server. Inspection saved locally and will sync when connection is restored.",
+          });
+          setLocationStr("/");
+        },
+      }
+    );
   };
 
   return (

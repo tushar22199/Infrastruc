@@ -96,19 +96,27 @@ router.post("/inspections/batch", async (req, res) => {
     return;
   }
   try {
+    const uid = req.isAuthenticated() ? req.user.id : null;
     const rows = await db
       .insert(inspectionsTable)
       .values(
-        parsed.data.inspections.map((i) => ({
-          title: i.title,
-          issueType: i.issueType,
-          severity: i.severity,
-          description: i.description,
-          latitude: i.latitude,
-          longitude: i.longitude,
-          status: i.status ?? "Active",
-          userId: req.isAuthenticated() ? req.user.id : null,
-        }))
+        parsed.data.inspections.map((i) => {
+          const anyI = i as any;
+          const interval = anyI.reinspectionInterval as string | undefined;
+          return {
+            title: i.title,
+            issueType: i.issueType,
+            severity: i.severity,
+            description: i.description,
+            latitude: i.latitude,
+            longitude: i.longitude,
+            status: i.status ?? "Active",
+            userId: uid,
+            reinspectionInterval: interval ?? null,
+            nextReinspectionDate: interval ? computeNextDate(interval) : null,
+            imageData: (anyI.imageData as string | undefined) ?? null,
+          };
+        })
       )
       .returning();
     res.status(201).json(rows);
