@@ -57,9 +57,22 @@ function getSafeReturnTo(value: unknown): string {
   return value;
 }
 
+function getAllowedUserIds(): Set<string> {
+  const raw = process.env.ALLOWED_USER_IDS ?? "";
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
 async function upsertUser(claims: Record<string, unknown>) {
-  const userData = {
-    id: claims.sub as string,
+  const userId = claims.sub as string;
+  const allowedIds = getAllowedUserIds();
+  const isAllowlisted = allowedIds.has(userId);
+
+  const profileData = {
     email: (claims.email as string) || null,
     firstName: (claims.first_name as string) || null,
     lastName: (claims.last_name as string) || null,
@@ -70,11 +83,18 @@ async function upsertUser(claims: Record<string, unknown>) {
 
   const [user] = await db
     .insert(usersTable)
-    .values(userData)
+    .values({
+      id: userId,
+      ...profileData,
+      isApproved: isAllowlisted,
+    })
     .onConflictDoUpdate({
       target: usersTable.id,
       set: {
-        ...userData,
+        ...profileData,
+        // Grant approval if the user is now in the allowlist; never revoke
+        // an approval that was already set (e.g. via manual DB update).
+        isApproved: isAllowlisted ? true : usersTable.isApproved,
         updatedAt: new Date(),
       },
     })
@@ -168,6 +188,13 @@ router.get("/callback", async (req: Request, res: Response) => {
     claims as unknown as Record<string, unknown>,
   );
 
+  if (!dbUser.isApproved) {
+    res.status(403).send(
+      "Access denied. Your account has not been approved for this application. Contact your administrator.",
+    );
+    return;
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const sessionData: SessionData = {
     user: {
@@ -237,6 +264,11 @@ router.post(
       const dbUser = await upsertUser(
         claims as unknown as Record<string, unknown>,
       );
+
+      if (!dbUser.isApproved) {
+        res.status(403).json({ error: "Access denied. Your account has not been approved for this application." });
+        return;
+      }
 
       const now = Math.floor(Date.now() / 1000);
       const sessionData: SessionData = {

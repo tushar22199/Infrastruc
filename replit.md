@@ -11,6 +11,7 @@ A full-stack offline-first web app for civil engineers to log, track, and analyz
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `ALLOWED_USER_IDS` — comma-separated Replit user IDs (`sub` claims) authorized as engineers (e.g. `abc123,def456`). Users not in this list are rejected at login with 403 even if their OIDC credentials are valid. Existing DB rows with `is_approved = true` are also accepted (manual approval path). Set before first login to bootstrap access.
 
 ## Stack
 
