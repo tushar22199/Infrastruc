@@ -476,6 +476,10 @@ export const LogoutBrowserSessionHeader = zod.object({
   "Authorization": zod.string().optional()
 })
 
+export const LogoutBrowserSessionResponse = zod.object({
+  "redirectUrl": zod.string().url()
+})
+
 
 /**
  * @summary Exchange a mobile OIDC code for a session token

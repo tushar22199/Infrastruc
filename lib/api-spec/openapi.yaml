@@ -578,7 +578,7 @@ paths:
         '302':
           description: Redirect to the returnTo path on success.
   /logout:
-    get:
+    post:
       tags: [Auth]
       operationId: logoutBrowserSession
       summary: Clear the session and begin OIDC logout
@@ -586,8 +586,17 @@ paths:
         - $ref: '#/components/parameters/AuthorizationSessionHeader'
         - $ref: '#/components/parameters/SessionCookie'
       responses:
-        '302':
-          description: Redirect to the OIDC provider logout URL.
+        '200':
+          description: Session cleared. Returns the OIDC end-session URL for the client to navigate to.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [redirectUrl]
+                properties:
+                  redirectUrl:
+                    type: string
+                    format: uri
   /mobile-auth/token-exchange:
     post:
       tags: [Auth]

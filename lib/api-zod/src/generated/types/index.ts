@@ -46,6 +46,7 @@ export * from './inspectionUpdateReinspectionInterval';
 export * from './inspectionUpdateSeverity';
 export * from './inspectionUpdateStatus';
 export * from './listActivityEventsParams';
+export * from './logoutBrowserSession200';
 export * from './logoutSuccess';
 export * from './markReadResult';
 export * from './mobileTokenExchangeRequest';

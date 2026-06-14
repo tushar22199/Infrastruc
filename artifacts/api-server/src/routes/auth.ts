@@ -187,7 +187,7 @@ router.get("/callback", async (req: Request, res: Response) => {
   res.redirect(returnTo);
 });
 
-router.get("/logout", async (req: Request, res: Response) => {
+router.post("/logout", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const origin = getOrigin(req);
 
@@ -199,7 +199,7 @@ router.get("/logout", async (req: Request, res: Response) => {
     post_logout_redirect_uri: origin,
   });
 
-  res.redirect(endSessionUrl.href);
+  res.json({ redirectUrl: endSessionUrl.href });
 });
 
 router.post(

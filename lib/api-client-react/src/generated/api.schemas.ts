@@ -396,3 +396,7 @@ state?: string;
 iss?: string;
 };
 
+export type LogoutBrowserSession200 = {
+  redirectUrl: string;
+};
+
