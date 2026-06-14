@@ -24,6 +24,7 @@ This project is an offline-first field inspection system for civil engineers. It
 
 - Production API entry points: `artifacts/api-server/src/index.ts`, `artifacts/api-server/src/app.ts`, and route files under `artifacts/api-server/src/routes/`.
 - Highest-risk server surfaces: `inspections.ts`, `dashboard.ts`, `comments.ts`, `assign.ts`, `activity.ts`, `notifications.ts`, and auth/session handling in `middlewares/authMiddleware.ts` plus `lib/auth.ts`.
+- Membership boundary anchor: `routes/auth.ts` auto-provisions successful OIDC logins into `usersTable`; future scans must verify that authentication is not being mistaken for engineer authorization.
 - Public vs authenticated surfaces: `healthz`, login/callback, and mobile auth endpoints are intentionally public; inspection, dashboard, assignment, comment, and activity endpoints should be treated as authenticated business surfaces unless explicitly documented otherwise.
 - Dev-only area: `artifacts/mockup-sandbox/`.
 
@@ -31,7 +32,7 @@ This project is an offline-first field inspection system for civil engineers. It
 
 ### Spoofing
 
-Users authenticate through Replit OIDC, with the API converting browser cookies or bearer tokens into `req.user`. The system must only treat requests as authenticated when a valid live session is present, must refresh or clear expired sessions safely, and must never allow anonymous callers to act as named engineers through client-controlled fields or fallback display names.
+Users authenticate through Replit OIDC, with the API converting browser cookies or bearer tokens into `req.user`. The system must only treat requests as authenticated when a valid live session is present, must refresh or clear expired sessions safely, and must never allow anonymous callers to act as named engineers through client-controlled fields or fallback display names. Successful OIDC login alone is not enough authorization for this application: the backend must distinguish trusted engineers from arbitrary external Replit identities before granting access to operational data.
 
 ### Tampering
 
@@ -47,4 +48,4 @@ Public-facing endpoints that read full inspection datasets or accept large JSON 
 
 ### Elevation of Privilege
 
-There is no separate admin role in the current codebase, so the main privilege boundary is anonymous user versus authenticated engineer. The backend must enforce that only authenticated engineers can read or mutate inspection workflows, assignments, comments, and analytics; otherwise an internet user can escalate from no access to full operational control.
+There is no separate admin role in the current codebase, so the main privilege boundary is anonymous user versus authenticated engineer. The backend must enforce that only authenticated engineers can read or mutate inspection workflows, assignments, comments, and analytics; otherwise an internet user can escalate from no access to full operational control. That guarantee requires a real engineer-membership check or approval flow, not just possession of any valid OIDC identity.
