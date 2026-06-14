@@ -421,7 +421,7 @@ export default function LogInspection() {
                       <SelectTrigger className="h-8 w-28 text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[1000]">
                         <SelectItem value="Point">Point</SelectItem>
                         <SelectItem value="LineString">Line</SelectItem>
                         <SelectItem value="Polygon">Area</SelectItem>
