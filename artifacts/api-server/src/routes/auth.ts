@@ -57,20 +57,26 @@ function getSafeReturnTo(value: unknown): string {
   return value;
 }
 
-function getAllowedUserIds(): Set<string> {
+/**
+ * Returns the configured allowlist, or null when ALLOWED_USER_IDS is not set.
+ * null means the allowlist feature is disabled and all authenticated users are
+ * approved automatically — the safe default when no restriction is intended.
+ */
+function getAllowedUserIds(): Set<string> | null {
   const raw = process.env.ALLOWED_USER_IDS ?? "";
-  return new Set(
-    raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
+  const ids = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return ids.length > 0 ? new Set(ids) : null;
 }
 
 async function upsertUser(claims: Record<string, unknown>) {
   const userId = claims.sub as string;
   const allowedIds = getAllowedUserIds();
-  const isAllowlisted = allowedIds.has(userId);
+  // When no allowlist is configured, approve every authenticated user.
+  // When an allowlist is configured, only listed IDs receive approval.
+  const isApproved = allowedIds === null ? true : allowedIds.has(userId);
 
   const profileData = {
     email: (claims.email as string) || null,
@@ -86,15 +92,15 @@ async function upsertUser(claims: Record<string, unknown>) {
     .values({
       id: userId,
       ...profileData,
-      isApproved: isAllowlisted,
+      isApproved,
     })
     .onConflictDoUpdate({
       target: usersTable.id,
       set: {
         ...profileData,
-        // Grant approval if the user is now in the allowlist; never revoke
-        // an approval that was already set (e.g. via manual DB update).
-        isApproved: isAllowlisted ? true : usersTable.isApproved,
+        // Grant approval when approved; never revoke an existing approval
+        // (preserves manually-set DB rows and allowlist removals gracefully).
+        isApproved: isApproved ? true : usersTable.isApproved,
         updatedAt: new Date(),
       },
     })
