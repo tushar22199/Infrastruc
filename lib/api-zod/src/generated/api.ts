@@ -27,6 +27,10 @@ export const ListInspectionsResponseItem = zod.object({
   "description": zod.string(),
   "latitude": zod.number(),
   "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
@@ -51,8 +55,10 @@ export const CreateInspectionBody = zod.object({
   "issueType": zod.enum(['Pavement Distress', 'Drainage', 'Structural Damage', 'Signage', 'Erosion', 'Bridge Deterioration', 'Utility Failure', 'Other']),
   "severity": zod.enum(['Critical', 'Medium', 'Low']),
   "description": zod.string(),
-  "latitude": zod.number(),
-  "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']).optional(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional(),
   "imageData": zod.string().optional()
@@ -71,8 +77,10 @@ export const BatchCreateInspectionsBody = zod.object({
   "issueType": zod.enum(['Pavement Distress', 'Drainage', 'Structural Damage', 'Signage', 'Erosion', 'Bridge Deterioration', 'Utility Failure', 'Other']),
   "severity": zod.enum(['Critical', 'Medium', 'Low']),
   "description": zod.string(),
-  "latitude": zod.number(),
-  "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']).optional(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional(),
   "imageData": zod.string().optional()
@@ -111,6 +119,10 @@ export const GetInspectionResponse = zod.object({
   "description": zod.string(),
   "latitude": zod.number(),
   "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
@@ -135,8 +147,10 @@ export const UpdateInspectionBody = zod.object({
   "issueType": zod.enum(['Pavement Distress', 'Drainage', 'Structural Damage', 'Signage', 'Erosion', 'Bridge Deterioration', 'Utility Failure', 'Other']).optional(),
   "severity": zod.enum(['Critical', 'Medium', 'Low']).optional(),
   "description": zod.string().optional(),
-  "latitude": zod.number().optional(),
-  "longitude": zod.number().optional(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).optional().describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']).optional(),
   "reinspectionInterval": zod.enum(['weekly', 'monthly', 'quarterly']).optional(),
   "imageData": zod.string().optional()
@@ -150,6 +164,10 @@ export const UpdateInspectionResponse = zod.object({
   "description": zod.string(),
   "latitude": zod.number(),
   "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
@@ -215,6 +233,10 @@ export const GetRecentInspectionsResponseItem = zod.object({
   "description": zod.string(),
   "latitude": zod.number(),
   "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),
@@ -328,6 +350,10 @@ export const AssignInspectionResponse = zod.object({
   "description": zod.string(),
   "latitude": zod.number(),
   "longitude": zod.number(),
+  "geometry": zod.object({
+  "type": zod.enum(['Point', 'LineString', 'Polygon']),
+  "coordinates": zod.array(zod.unknown()).describe('GeoJSON coordinate array — structure varies by geometry type.')
+}).describe('GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).'),
   "status": zod.enum(['Active', 'Resolved', 'Under Review']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().nullish(),

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, doublePrecision, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, doublePrecision, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -24,6 +24,7 @@ export const inspectionsTable = pgTable("inspections", {
   description: text("description").notNull(),
   latitude: doublePrecision("latitude").notNull(),
   longitude: doublePrecision("longitude").notNull(),
+  geometry: jsonb("geometry"),
   status: text("status").notNull().default("Active"),
   userId: text("user_id"),
   assignedTo: text("assigned_to"),

@@ -5,6 +5,7 @@
  * Intelligent Field Inspection & Infrastructure Auditor API
  * OpenAPI spec version: 0.1.0
  */
+import type { InspectionGeometry } from './inspectionGeometry';
 import type { InspectionIssueType } from './inspectionIssueType';
 import type { InspectionReinspectionInterval } from './inspectionReinspectionInterval';
 import type { InspectionSeverity } from './inspectionSeverity';
@@ -18,6 +19,7 @@ export interface Inspection {
   description: string;
   latitude: number;
   longitude: number;
+  geometry: InspectionGeometry;
   status: InspectionStatus;
   createdAt: Date;
   /** @nullable */

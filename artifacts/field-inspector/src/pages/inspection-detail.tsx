@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, MapPin, Activity, Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Polygon } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useState, useRef } from "react";
@@ -71,8 +71,8 @@ export default function InspectionDetail() {
     );
   };
 
-  const icon = inspection.severity === 'Critical' ? createCustomIcon('#ef4444') : 
-               inspection.severity === 'Medium' ? createCustomIcon('#f59e0b') : createCustomIcon('#22c55e');
+  const severityColor = inspection.severity === 'Critical' ? '#ef4444' : inspection.severity === 'Medium' ? '#f59e0b' : '#22c55e';
+  const icon = createCustomIcon(severityColor);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -160,15 +160,41 @@ export default function InspectionDetail() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   className="map-tiles"
                 />
-                <Marker position={[inspection.latitude, inspection.longitude]} icon={icon} />
+                {inspection.geometry.type === "LineString" ? (
+                  <Polyline
+                    positions={inspection.geometry.coordinates.map((c) => { const p = c as number[]; return [p[1], p[0]] as [number, number]; })}
+                    pathOptions={{ color: severityColor, weight: 4, opacity: 0.9 }}
+                  />
+                ) : inspection.geometry.type === "Polygon" ? (
+                  <Polygon
+                    positions={(inspection.geometry.coordinates[0] as unknown[]).map((c) => { const p = c as number[]; return [p[1], p[0]] as [number, number]; })}
+                    pathOptions={{ color: severityColor, fillColor: severityColor, fillOpacity: 0.2, weight: 2 }}
+                  />
+                ) : (
+                  <Marker position={[inspection.latitude, inspection.longitude]} icon={icon} />
+                )}
               </MapContainer>
               <style dangerouslySetInnerHTML={{__html: `
                 .map-tiles { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
               `}} />
             </div>
             <CardContent className="p-4 bg-secondary/10 flex justify-between font-mono text-sm">
-              <span>LAT: {inspection.latitude.toFixed(6)}</span>
-              <span>LNG: {inspection.longitude.toFixed(6)}</span>
+              {inspection.geometry.type === "Point" ? (
+                <>
+                  <span>LAT: {inspection.latitude.toFixed(6)}</span>
+                  <span>LNG: {inspection.longitude.toFixed(6)}</span>
+                </>
+              ) : (
+                <>
+                  <span className="uppercase tracking-wider text-xs text-muted-foreground self-center">
+                    {inspection.geometry.type === "LineString" ? "Line" : "Area"}
+                  </span>
+                  <span>{(inspection.geometry.coordinates as unknown[]).length} {inspection.geometry.type === "LineString" ? "pts" : "vertices"}</span>
+                  <span className="text-muted-foreground text-xs self-center">
+                    ref {inspection.latitude.toFixed(4)}, {inspection.longitude.toFixed(4)}
+                  </span>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -9,6 +9,24 @@ export interface HealthStatus {
   status: string;
 }
 
+export type InspectionGeometryType = typeof InspectionGeometryType[keyof typeof InspectionGeometryType];
+
+
+export const InspectionGeometryType = {
+  Point: 'Point',
+  LineString: 'LineString',
+  Polygon: 'Polygon',
+} as const;
+
+/**
+ * GeoJSON geometry for the spatial extent of an inspection asset. Point: [lng,lat] — a single point marker. LineString: [[lng,lat],...] — a linear feature (e.g. road crack). Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).
+ */
+export interface InspectionGeometry {
+  type: InspectionGeometryType;
+  /** GeoJSON coordinate array — structure varies by geometry type. */
+  coordinates: unknown[];
+}
+
 export type InspectionIssueType = typeof InspectionIssueType[keyof typeof InspectionIssueType];
 
 
@@ -62,6 +80,7 @@ export interface Inspection {
   description: string;
   latitude: number;
   longitude: number;
+  geometry: InspectionGeometry;
   status: InspectionStatus;
   createdAt: string;
   /** @nullable */
@@ -127,8 +146,7 @@ export interface InspectionInput {
   issueType: InspectionInputIssueType;
   severity: InspectionInputSeverity;
   description: string;
-  latitude: number;
-  longitude: number;
+  geometry: InspectionGeometry;
   status?: InspectionInputStatus;
   reinspectionInterval?: InspectionInputReinspectionInterval;
   imageData?: string;
@@ -180,8 +198,7 @@ export interface InspectionUpdate {
   issueType?: InspectionUpdateIssueType;
   severity?: InspectionUpdateSeverity;
   description?: string;
-  latitude?: number;
-  longitude?: number;
+  geometry?: InspectionGeometry;
   status?: InspectionUpdateStatus;
   reinspectionInterval?: InspectionUpdateReinspectionInterval;
   imageData?: string;

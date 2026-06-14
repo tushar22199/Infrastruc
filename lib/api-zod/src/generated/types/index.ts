@@ -29,6 +29,8 @@ export * from './hotspot';
 export * from './inspection';
 export * from './inspectionBatchInput';
 export * from './inspectionComment';
+export * from './inspectionGeometry';
+export * from './inspectionGeometryType';
 export * from './inspectionInput';
 export * from './inspectionInputIssueType';
 export * from './inspectionInputReinspectionInterval';

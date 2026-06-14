@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useListInspections, useGetHotspots } from "@workspace/api-client-react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, Polygon, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Card } from "@/components/ui/card";
@@ -35,6 +35,10 @@ const searchPinIcon = L.divIcon({
 const iconCritical = createCustomIcon('#ef4444');
 const iconMedium = createCustomIcon('#f59e0b');
 const iconLow = createCustomIcon('#22c55e');
+
+const SEVERITY_COLOR: Record<string, string> = { Critical: '#ef4444', Medium: '#f59e0b', Low: '#22c55e' };
+// GeoJSON: [lng, lat] → Leaflet: [lat, lng]
+const geoToLl = (c: unknown): [number, number] => { const p = c as number[]; return [p[1], p[0]]; };
 
 interface NominatimResult {
   place_id: number;
@@ -241,43 +245,68 @@ export default function MapView() {
             </Circle>
           ))}
 
-          {/* Inspection markers */}
+          {/* Inspection overlays — Point → Marker, LineString → Polyline, Polygon → shaded Area */}
           {inspections?.map((inspection) => {
+            const color = SEVERITY_COLOR[inspection.severity] ?? '#22c55e';
             const icon = inspection.severity === 'Critical' ? iconCritical :
                          inspection.severity === 'Medium' ? iconMedium : iconLow;
-            return (
-              <Marker
-                key={inspection.id}
-                position={[inspection.latitude, inspection.longitude]}
-                icon={icon}
-              >
-                <Popup className="custom-popup">
-                  <div className="p-1 space-y-2">
-                    <h3 className="font-bold text-base border-b border-border pb-1">{inspection.title}</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                      <span className="text-muted-foreground font-medium uppercase text-xs">Type:</span>
-                      <span className="font-mono">{inspection.issueType}</span>
-                      <span className="text-muted-foreground font-medium uppercase text-xs">Severity:</span>
-                      <span className={`font-bold uppercase tracking-wider text-xs ${
-                        inspection.severity === 'Critical' ? 'text-destructive' :
-                        inspection.severity === 'Medium' ? 'text-primary' : 'text-green-500'
-                      }`}>{inspection.severity}</span>
-                    </div>
-                    {inspection.imageData && (
-                      <img
-                        src={inspection.imageData}
-                        alt="Site photo"
-                        className="mt-2 w-full rounded object-cover max-h-32 border border-border"
-                      />
+            const geom = inspection.geometry;
+
+            const popupContent = (
+              <Popup className="custom-popup">
+                <div className="p-1 space-y-2">
+                  <h3 className="font-bold text-base border-b border-border pb-1">{inspection.title}</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                    <span className="text-muted-foreground font-medium uppercase text-xs">Type:</span>
+                    <span className="font-mono">{inspection.issueType}</span>
+                    <span className="text-muted-foreground font-medium uppercase text-xs">Severity:</span>
+                    <span className={`font-bold uppercase tracking-wider text-xs ${
+                      inspection.severity === 'Critical' ? 'text-destructive' :
+                      inspection.severity === 'Medium' ? 'text-primary' : 'text-green-500'
+                    }`}>{inspection.severity}</span>
+                    {geom.type !== "Point" && (
+                      <>
+                        <span className="text-muted-foreground font-medium uppercase text-xs">Shape:</span>
+                        <span className="font-mono text-xs">{geom.type === "LineString" ? "Line" : "Area"}</span>
+                      </>
                     )}
-                    <p className="text-sm mt-2 line-clamp-3 text-muted-foreground">{inspection.description}</p>
-                    <div className="mt-3 pt-2 border-t border-border">
-                      <Link href={`/inspections/${inspection.id}`} className="text-primary hover:underline text-sm font-bold uppercase tracking-wider">
-                        View Details →
-                      </Link>
-                    </div>
                   </div>
-                </Popup>
+                  {inspection.imageData && (
+                    <img
+                      src={inspection.imageData}
+                      alt="Site photo"
+                      className="mt-2 w-full rounded object-cover max-h-32 border border-border"
+                    />
+                  )}
+                  <p className="text-sm mt-2 line-clamp-3 text-muted-foreground">{inspection.description}</p>
+                  <div className="mt-3 pt-2 border-t border-border">
+                    <Link href={`/inspections/${inspection.id}`} className="text-primary hover:underline text-sm font-bold uppercase tracking-wider">
+                      View Details →
+                    </Link>
+                  </div>
+                </div>
+              </Popup>
+            );
+
+            if (geom.type === "LineString") {
+              return (
+                <Polyline key={inspection.id} positions={geom.coordinates.map(geoToLl)} pathOptions={{ color, weight: 4, opacity: 0.85 }}>
+                  {popupContent}
+                </Polyline>
+              );
+            }
+
+            if (geom.type === "Polygon") {
+              return (
+                <Polygon key={inspection.id} positions={(geom.coordinates[0] as unknown[]).map(geoToLl)} pathOptions={{ color, fillColor: color, fillOpacity: 0.2, weight: 2, opacity: 0.85 }}>
+                  {popupContent}
+                </Polygon>
+              );
+            }
+
+            return (
+              <Marker key={inspection.id} position={[inspection.latitude, inspection.longitude]} icon={icon}>
+                {popupContent}
               </Marker>
             );
           })}

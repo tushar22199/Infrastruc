@@ -21,6 +21,39 @@ function computeNextDate(interval: string): Date {
   return now;
 }
 
+type GeoJsonGeometry = { type: string; coordinates: unknown[] };
+
+/** Extract the representative [latitude, longitude] from a GeoJSON geometry.
+ *  GeoJSON stores coordinates as [lng, lat]; we return [lat, lng] for DB. */
+function representativePoint(geom: GeoJsonGeometry): { lat: number; lng: number } {
+  if (geom.type === "Point") {
+    const [lng, lat] = geom.coordinates as [number, number];
+    return { lat, lng };
+  }
+  if (geom.type === "LineString") {
+    const [lng, lat] = (geom.coordinates as [number, number][])[0];
+    return { lat, lng };
+  }
+  if (geom.type === "Polygon") {
+    const ring = (geom.coordinates as [number, number][][])[0];
+    const [lng, lat] = ring[0];
+    return { lat, lng };
+  }
+  throw new Error(`Unknown geometry type: ${geom.type}`);
+}
+
+/** Ensure every returned inspection always has a geometry field.
+ *  Old records in the DB have geometry=null — synthesize a Point from lat/lng. */
+function withGeometry<T extends { geometry: unknown; latitude: number; longitude: number }>(row: T) {
+  return {
+    ...row,
+    geometry: (row.geometry as GeoJsonGeometry | null) ?? {
+      type: "Point",
+      coordinates: [row.longitude, row.latitude],
+    },
+  };
+}
+
 // GET /inspections
 router.get("/inspections", async (req, res) => {
   try {
@@ -28,7 +61,7 @@ router.get("/inspections", async (req, res) => {
       .select()
       .from(inspectionsTable)
       .orderBy(desc(inspectionsTable.createdAt));
-    res.json(rows);
+    res.json(rows.map(withGeometry));
   } catch (err) {
     req.log.error({ err }, "Failed to list inspections");
     res.status(500).json({ error: "Internal server error" });
@@ -49,8 +82,15 @@ router.post("/inspections", async (req, res) => {
       : "Engineer";
 
     const anyData = parsed.data as any;
+    const geom = anyData.geometry as GeoJsonGeometry | undefined;
     const interval = anyData.reinspectionInterval as string | undefined;
     const imageData = anyData.imageData as string | undefined;
+
+    // Derive representative point from geometry; fall back to legacy lat/lng fields
+    const point = geom
+      ? representativePoint(geom)
+      : { lat: (anyData.latitude as number) ?? 0, lng: (anyData.longitude as number) ?? 0 };
+
     const [row] = await db
       .insert(inspectionsTable)
       .values({
@@ -58,14 +98,15 @@ router.post("/inspections", async (req, res) => {
         issueType: parsed.data.issueType,
         severity: parsed.data.severity,
         description: parsed.data.description,
-        latitude: parsed.data.latitude,
-        longitude: parsed.data.longitude,
+        latitude: point.lat,
+        longitude: point.lng,
+        geometry: geom ?? null,
         status: parsed.data.status ?? "Active",
         userId,
         reinspectionInterval: interval ?? null,
         nextReinspectionDate: interval ? computeNextDate(interval) : null,
         imageData: imageData ?? null,
-      })
+      } as any)
       .returning();
 
     // Log activity event (fire-and-forget)
@@ -81,7 +122,7 @@ router.post("/inspections", async (req, res) => {
       .execute()
       .catch((err: unknown) => req.log.error({ err }, "Failed to log activity"));
 
-    res.status(201).json(row);
+    res.status(201).json(withGeometry(row));
   } catch (err) {
     req.log.error({ err }, "Failed to create inspection");
     res.status(500).json({ error: "Internal server error" });
@@ -102,24 +143,29 @@ router.post("/inspections/batch", async (req, res) => {
       .values(
         parsed.data.inspections.map((i) => {
           const anyI = i as any;
+          const geom = anyI.geometry as GeoJsonGeometry | undefined;
           const interval = anyI.reinspectionInterval as string | undefined;
+          const point = geom
+            ? representativePoint(geom)
+            : { lat: (anyI.latitude as number) ?? 0, lng: (anyI.longitude as number) ?? 0 };
           return {
             title: i.title,
             issueType: i.issueType,
             severity: i.severity,
             description: i.description,
-            latitude: i.latitude,
-            longitude: i.longitude,
+            latitude: point.lat,
+            longitude: point.lng,
+            geometry: geom ?? null,
             status: i.status ?? "Active",
             userId: uid,
             reinspectionInterval: interval ?? null,
             nextReinspectionDate: interval ? computeNextDate(interval) : null,
             imageData: (anyI.imageData as string | undefined) ?? null,
           };
-        })
+        }) as any
       )
       .returning();
-    res.status(201).json(rows);
+    res.status(201).json(rows.map(withGeometry));
   } catch (err) {
     req.log.error({ err }, "Failed to batch create inspections");
     res.status(500).json({ error: "Internal server error" });
@@ -216,7 +262,7 @@ router.get("/inspections/:id", async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    res.json(row);
+    res.json(withGeometry(row));
   } catch (err) {
     req.log.error({ err }, "Failed to get inspection");
     res.status(500).json({ error: "Internal server error" });
@@ -246,12 +292,23 @@ router.patch("/inspections/:id", async (req, res) => {
       return;
     }
 
+    // If geometry is being updated, derive a new representative lat/lng
+    const anyBody = bodyParsed.data as any;
+    const geomUpdate = anyBody.geometry as GeoJsonGeometry | undefined;
+    const extraFields: Record<string, unknown> = {};
+    if (geomUpdate) {
+      const point = representativePoint(geomUpdate);
+      extraFields.latitude = point.lat;
+      extraFields.longitude = point.lng;
+    }
+
     const [row] = await db
       .update(inspectionsTable)
       .set({
         ...bodyParsed.data,
+        ...extraFields,
         updatedAt: new Date(),
-      })
+      } as any)
       .where(eq(inspectionsTable.id, paramsParsed.data.id))
       .returning();
     if (!row) {
@@ -303,7 +360,7 @@ router.patch("/inspections/:id", async (req, res) => {
         .catch((err: unknown) => req.log.error({ err }, "Failed to log activity"));
     }
 
-    res.json(row);
+    res.json(withGeometry(row));
   } catch (err) {
     req.log.error({ err }, "Failed to update inspection");
     res.status(500).json({ error: "Internal server error" });

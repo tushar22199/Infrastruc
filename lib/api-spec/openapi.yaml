@@ -662,9 +662,26 @@ components:
           type: string
       required: [status]
 
+    InspectionGeometry:
+      type: object
+      required: [type, coordinates]
+      description: >-
+        GeoJSON geometry for the spatial extent of an inspection asset.
+        Point: [lng,lat] — a single point marker.
+        LineString: [[lng,lat],...] — a linear feature (e.g. road crack).
+        Polygon: [[[lng,lat],...]] — an area feature (e.g. drainage basin).
+      properties:
+        type:
+          type: string
+          enum: [Point, LineString, Polygon]
+        coordinates:
+          type: array
+          description: GeoJSON coordinate array — structure varies by geometry type.
+          items: {}
+
     Inspection:
       type: object
-      required: [id, title, issueType, severity, description, latitude, longitude, status, createdAt]
+      required: [id, title, issueType, severity, description, latitude, longitude, geometry, status, createdAt]
       properties:
         id:
           type: integer
@@ -690,6 +707,8 @@ components:
           type: number
         longitude:
           type: number
+        geometry:
+          $ref: "#/components/schemas/InspectionGeometry"
         status:
           type: string
           enum: [Active, Resolved, Under Review]
@@ -716,7 +735,7 @@ components:
 
     InspectionInput:
       type: object
-      required: [title, issueType, severity, description, latitude, longitude]
+      required: [title, issueType, severity, description, geometry]
       properties:
         title:
           type: string
@@ -737,10 +756,8 @@ components:
           enum: [Critical, Medium, Low]
         description:
           type: string
-        latitude:
-          type: number
-        longitude:
-          type: number
+        geometry:
+          $ref: "#/components/schemas/InspectionGeometry"
         status:
           type: string
           enum: [Active, Resolved, Under Review]
@@ -771,10 +788,8 @@ components:
           enum: [Critical, Medium, Low]
         description:
           type: string
-        latitude:
-          type: number
-        longitude:
-          type: number
+        geometry:
+          $ref: "#/components/schemas/InspectionGeometry"
         status:
           type: string
           enum: [Active, Resolved, Under Review]

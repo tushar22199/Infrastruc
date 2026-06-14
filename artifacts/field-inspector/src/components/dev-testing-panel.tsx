@@ -9,6 +9,7 @@ import {
   InspectionInputIssueType,
   InspectionInputSeverity,
   type InspectionInput,
+  type InspectionGeometry,
 } from "@workspace/api-client-react";
 import { FlaskConical, Wifi, WifiOff, DatabaseZap, Loader2 } from "lucide-react";
 
@@ -41,15 +42,14 @@ export function DevTestingPanel() {
       for (let i = 0; i < 5; i++) {
         const severity = randomFrom(MOCK_SEVERITIES);
         const issueType = randomFrom(ISSUE_TYPES);
-        const latitude = Number((24 + Math.random() * 25).toFixed(6));
-        const longitude = Number((-124 + Math.random() * 58).toFixed(6));
+        const lng = Number((-124 + Math.random() * 58).toFixed(6));
+        const lat = Number((24 + Math.random() * 25).toFixed(6));
         const payload: InspectionInput = {
           title: `[MOCK] ${severity} ${issueType}`,
           issueType,
           severity,
-          description: `Auto-generated stress-test log #${i + 1}. Dummy coordinates for IndexedDB queue testing.`,
-          latitude,
-          longitude,
+          description: `Auto-generated stress-test log #${i + 1}. Dummy geometry for IndexedDB queue testing.`,
+          geometry: { type: "Point", coordinates: [lng, lat] } as InspectionGeometry,
           status: "Active",
         };
         await addToQueue(payload);

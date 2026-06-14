@@ -1,2 +1,3 @@
 - [Offline sync architecture](offline-sync-architecture.md) — IndexedDB queue is single source of truth; never direct-POST+enqueue; acquire sync lock before any await; batch route must map all fields.
 - [Developer Testing Panel gate](dev-testing-panel-gate.md) — dev panel hidden behind VITE_DEV_MODE or 5-click logo knock; keep the flag UNSET in deploy; client-side gate only, not authz.
+- [GeoJSON geometry upgrade](geojson-geometry-upgrade.md) — spatial geometry on inspections; lat/lng kept NOT NULL and derived from geometry; old records get Point synthesized at read time; GeoJSON [lng,lat] ≠ Leaflet [lat,lng].

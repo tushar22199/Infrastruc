@@ -31,7 +31,9 @@ export function exportAuditReport(summary: DashboardSummary, inspections: Inspec
       i.issueType,
       i.severity,
       i.status,
-      `${i.latitude.toFixed(4)}, ${i.longitude.toFixed(4)}`
+      i.geometry.type === "Point"
+        ? `${i.latitude.toFixed(4)}, ${i.longitude.toFixed(4)}`
+        : `${i.geometry.type} · ${(i.geometry.coordinates as unknown[]).length} pts`
     ]),
     theme: 'grid',
     headStyles: { fillColor: [40, 40, 40] },
