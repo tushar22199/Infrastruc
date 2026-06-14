@@ -7,13 +7,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
 import { offlineDb } from "./offline-db";
+import { getEffectiveOnline, useEffectiveOnline } from "./network-status";
 import { useToast } from "@/hooks/use-toast";
 
 let syncInProgress = false;
 let rerunRequested = false;
 
 export function useOfflineSync() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const isOnline = useEffectiveOnline();
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,7 +33,7 @@ export function useOfflineSync() {
   }, []);
 
   const syncQueue = useCallback(async () => {
-    if (!navigator.onLine) return;
+    if (!getEffectiveOnline()) return;
 
     // Acquire the lock synchronously — before any await — so concurrent callers
     // (multiple hook instances, or StrictMode double-effects) cannot both read
@@ -47,6 +48,11 @@ export function useOfflineSync() {
     try {
       do {
         rerunRequested = false;
+
+        // Re-check connectivity before each batch: if the network drops (or is
+        // forced offline via the dev panel) mid-drain, stop here so rows queued
+        // after the toggle are not pushed until connectivity is restored.
+        if (!getEffectiveOnline()) break;
 
         const pending = await offlineDb.pendingInspections.orderBy("queuedAt").toArray();
         if (pending.length === 0) break;
@@ -84,25 +90,12 @@ export function useOfflineSync() {
     }
   }, [queryClient, toast]);
 
+  // Drain the queue on mount and whenever connectivity (real or simulated) is restored.
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      void syncQueue();
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    if (navigator.onLine) {
+    if (isOnline) {
       void syncQueue();
     }
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [syncQueue]);
+  }, [isOnline, syncQueue]);
 
   return {
     isOnline,

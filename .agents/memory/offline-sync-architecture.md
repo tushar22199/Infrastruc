@@ -36,3 +36,22 @@ drains it via the batch POST endpoint, deleting rows by id only after a 201.
 
 - **Delete by captured ids (`bulkDelete(ids)`), not `clear()`.** Clearing the
   whole store would drop rows added between the read snapshot and the delete.
+
+## Network status override (for testing / simulated offline)
+
+Connectivity is read through a single `getEffectiveOnline()` (in `network-status.ts`)
+— a module-level forced override (`"online"|"offline"|null`) wins over
+`navigator.onLine`. React reads it via `useEffectiveOnline()` (a
+`useSyncExternalStore`). The sync engine and the sidebar badge both consult it, so
+a dev toggle can simulate offline app-wide.
+
+- **Do not read `navigator.onLine` directly** anywhere connectivity matters — go
+  through `getEffectiveOnline()`, or a forced-offline toggle won't actually stop
+  syncing. **Why:** a missed call site silently ignores the override.
+- **Re-check `getEffectiveOnline()` at the top of every drain iteration**, not just
+  at `syncQueue` entry. Otherwise rows queued right after a mid-flight
+  force-offline get posted by the still-running loop, breaking the offline guarantee.
+- Swapping a hook's signature (e.g. `useState(navigator.onLine)` →
+  `useSyncExternalStore`) in an always-mounted component (Layout) throws a
+  "change in the order of Hooks" error **only under HMR**; it clears on a full
+  reload / workflow restart and is not a real bug.

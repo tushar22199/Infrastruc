@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Download, AlertTriangle, CheckCircle, Activity, LayoutDashboard, Flame, MapPin, RefreshCw, Clock } from "lucide-react";
 import { exportAuditReport } from "@/lib/pdf-export";
+import { DevTestingPanel } from "@/components/dev-testing-panel";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
@@ -55,6 +56,8 @@ export default function Dashboard() {
           Export Audit Report
         </Button>
       </div>
+
+      <DevTestingPanel />
 
       {/* Hotspot Alerts */}
       {hotspots && hotspots.length > 0 && (
