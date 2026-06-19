@@ -49,7 +49,9 @@ function LoginGate({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen bg-background dark flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <Activity className="h-8 w-8 text-primary animate-pulse" />
-          <p className="text-sm font-mono uppercase tracking-widest">Authenticating...</p>
+          <p className="text-sm font-mono uppercase tracking-widest">
+            Authenticating...
+          </p>
         </div>
       </div>
     );
@@ -61,12 +63,17 @@ function LoginGate({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center gap-8 max-w-sm text-center px-6">
           <div className="flex items-center gap-3">
             <Activity className="h-8 w-8 text-primary" />
-            <span className="font-bold tracking-tight text-2xl uppercase text-foreground">AUDITOR</span>
+            <span className="font-bold tracking-tight text-2xl uppercase text-foreground">
+              AUDITOR
+            </span>
           </div>
           <div className="space-y-2">
-            <h1 className="text-xl font-bold uppercase tracking-wider text-foreground">Field Inspection System</h1>
+            <h1 className="text-xl font-bold uppercase tracking-wider text-foreground">
+              Field Inspection System
+            </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Secure access required. Sign in to log, track, and analyze infrastructure failures.
+              Secure access required. Sign in to log, track, and analyze
+              infrastructure failures.
             </p>
           </div>
           <div className="w-full border border-border rounded-lg p-6 bg-card space-y-4">
@@ -77,12 +84,19 @@ function LoginGate({ children }: { children: React.ReactNode }) {
                 { label: "PDF Reports", desc: "Audit-ready" },
               ].map((f) => (
                 <div key={f.label} className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-primary">{f.label}</div>
-                  <div className="text-[10px] text-muted-foreground">{f.desc}</div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-primary">
+                    {f.label}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {f.desc}
+                  </div>
                 </div>
               ))}
             </div>
-            <Button onClick={login} className="w-full font-bold uppercase tracking-wider h-11">
+            <Button
+              onClick={login}
+              className="w-full font-bold uppercase tracking-wider h-11"
+            >
               Sign In to Continue
             </Button>
           </div>
@@ -102,9 +116,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <LoginGate>
-            <Router />
-          </LoginGate>
+          <Router />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

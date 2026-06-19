@@ -117,6 +117,12 @@ router.get("/auth/user", (req: Request, res: Response) => {
 });
 
 router.get("/login", async (req: Request, res: Response) => {
+  if (!process.env.REPL_ID) {
+    return res.status(503).json({
+      message: "Authentication disabled"
+    });
+  }
+  
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
@@ -148,6 +154,11 @@ router.get("/login", async (req: Request, res: Response) => {
 // Query params are not validated because the OIDC provider may include
 // parameters not expressed in the schema.
 router.get("/callback", async (req: Request, res: Response) => {
+
+  if (!process.env.REPL_ID) {
+    return res.redirect("/");
+  }
+  
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
