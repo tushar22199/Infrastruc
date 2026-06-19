@@ -46,7 +46,7 @@ console.log("Serving frontend from:", publicDir);
 
 app.use(express.static(publicDir));
 
-app.get("*", (_req, res) => {
+app.use((_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
