@@ -1,3 +1,5 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -34,5 +36,18 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(authMiddleware);
 
 app.use("/api", router);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const publicDir = path.resolve(__dirname, "../../field-inspector/dist/public");
+
+console.log("Serving frontend from:", publicDir);
+
+app.use(express.static(publicDir));
+
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
 
 export default app;
