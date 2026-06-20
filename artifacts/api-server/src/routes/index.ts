@@ -16,7 +16,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 
-router.use(requireAuth);
+//router.use(requireAuth);
 
 router.use(inspectionsRouter);
 router.use(dashboardRouter);
