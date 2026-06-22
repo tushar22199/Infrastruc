@@ -1,55 +1,12 @@
-import * as oidc from "openid-client";
-import { type Request, type Response, type NextFunction } from "express";
-import type { AuthUser } from "@workspace/api-zod";
-import {
-  clearSession,
-  getOidcConfig,
-  getSessionId,
-  getSession,
-  updateSession,
-  type SessionData,
-} from "../lib/auth";
+import { Request, Response, NextFunction } from "express";
+import { verifyToken } from "../lib/jwt";
 
 declare global {
   namespace Express {
-    interface User extends AuthUser {}
-
     interface Request {
-      isAuthenticated(): this is AuthedRequest;
-
-      user?: User | undefined;
+      isAuthenticated(): boolean;
+      user?: any;
     }
-
-    export interface AuthedRequest {
-      user: User;
-    }
-  }
-}
-
-async function refreshIfExpired(
-  sid: string,
-  session: SessionData,
-): Promise<SessionData | null> {
-  const now = Math.floor(Date.now() / 1000);
-  if (!session.expires_at || now <= session.expires_at) return session;
-
-  if (!session.refresh_token) return null;
-
-  try {
-    const config = await getOidcConfig();
-    const tokens = await oidc.refreshTokenGrant(
-      config,
-      session.refresh_token,
-    );
-    session.access_token = tokens.access_token;
-    session.refresh_token = tokens.refresh_token ?? session.refresh_token;
-    session.expires_at = tokens.expiresIn()
-      ? now + tokens.expiresIn()!
-      : session.expires_at;
-    await updateSession(sid, session);
-    return session;
-  } catch {
-    return null;
   }
 }
 
@@ -57,43 +14,36 @@ export function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
-) {
+): void {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+
   next();
 }
 
 export async function authMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) {
-  req.isAuthenticated = function (this: Request) {
-    return this.user != null;
-  } as Request["isAuthenticated"];
+  req.isAuthenticated = function () {
+    return !!this.user;
+  };
 
-  const sid = getSessionId(req);
-  if (!sid) {
-    next();
-    return;
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return next();
   }
 
-  const session = await getSession(sid);
-  if (!session?.user?.id) {
-    await clearSession(res, sid);
-    next();
-    return;
+  try {
+    const token = authHeader.replace("Bearer ", "");
+    req.user = verifyToken(token);
+  } catch {
+    req.user = undefined;
   }
 
-  const refreshed = await refreshIfExpired(sid, session);
-  if (!refreshed) {
-    await clearSession(res, sid);
-    next();
-    return;
-  }
-
-  req.user = refreshed.user;
   next();
 }

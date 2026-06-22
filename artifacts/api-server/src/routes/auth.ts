@@ -1,3 +1,6 @@
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { signToken } from "../lib/jwt";
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
@@ -22,6 +25,67 @@ import {
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 const router: IRouter = Router();
+router.post(
+  "/auth/register",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+
+      if (!email || !password) {
+        res.status(400).json({
+          error: "Email and password are required",
+        });
+        return;
+      }
+      const existing = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, email));
+
+      if (existing.length > 0) {
+        res.status(400).json({
+          error: "Email already exists",
+        });
+        return;
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const [user] = await db
+        .insert(usersTable)
+        .values({
+          email,
+          password: hashedPassword,
+          firstName: firstName ?? null,
+          lastName: lastName ?? null,
+          isApproved: true,
+        })
+        .returning();
+
+      const token = signToken({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+      });
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+        },
+      });
+    } catch (err) {
+      req.log.error({ err }, "register error");
+      res.status(500).json({ error: "Registration failed" });
+    }
+  },
+);
 
 function getOrigin(req: Request): string {
   const proto = req.headers["x-forwarded-proto"] || "https";
@@ -51,7 +115,11 @@ function setOidcCookie(res: Response, name: string, value: string) {
 }
 
 function getSafeReturnTo(value: unknown): string {
-  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith("/") ||
+    value.startsWith("//")
+  ) {
     return "/";
   }
   return value;
@@ -116,13 +184,14 @@ router.get("/auth/user", (req: Request, res: Response) => {
   );
 });
 
-router.get("/login", async (req: Request, res: Response) => {
+router.get("/login", async (req: Request, res: Response): Promise<void> => {
   if (!process.env.REPL_ID) {
-    return res.status(503).json({
-      message: "Authentication disabled"
+    res.status(503).json({
+      message: "Authentication disabled",
     });
+    return;
   }
-  
+
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
@@ -154,11 +223,10 @@ router.get("/login", async (req: Request, res: Response) => {
 // Query params are not validated because the OIDC provider may include
 // parameters not expressed in the schema.
 router.get("/callback", async (req: Request, res: Response) => {
-
   if (!process.env.REPL_ID) {
     return res.redirect("/");
   }
-  
+
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
@@ -201,14 +269,14 @@ router.get("/callback", async (req: Request, res: Response) => {
     return;
   }
 
-  const dbUser = await upsertUser(
-    claims as unknown as Record<string, unknown>,
-  );
+  const dbUser = await upsertUser(claims as unknown as Record<string, unknown>);
 
   if (!dbUser.isApproved) {
-    res.status(403).send(
-      "Access denied. Your account has not been approved for this application. Contact your administrator.",
-    );
+    res
+      .status(403)
+      .send(
+        "Access denied. Your account has not been approved for this application. Contact your administrator.",
+      );
     return;
   }
 
@@ -263,7 +331,9 @@ router.post(
       const callbackUrl = new URL(redirect_uri);
       callbackUrl.searchParams.set("code", code);
       callbackUrl.searchParams.set("state", state);
-      callbackUrl.searchParams.set("iss", ISSUER_URL);
+      if (ISSUER_URL) {
+        callbackUrl.searchParams.set("iss", ISSUER_URL);
+      }
 
       const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
         pkceCodeVerifier: code_verifier,
@@ -283,7 +353,10 @@ router.post(
       );
 
       if (!dbUser.isApproved) {
-        res.status(403).json({ error: "Access denied. Your account has not been approved for this application." });
+        res.status(403).json({
+          error:
+            "Access denied. Your account has not been approved for this application.",
+        });
         return;
       }
 
