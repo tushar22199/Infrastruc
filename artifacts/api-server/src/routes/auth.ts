@@ -83,6 +83,68 @@ router.post(
     } catch (err) {
       req.log.error({ err }, "register error");
       res.status(500).json({ error: "Registration failed" });
+      return;
+    }
+  },
+);
+router.post(
+  "/auth/login",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        res.status(400).json({
+          error: "Email and password are required",
+        });
+        return;
+      }
+
+      const [user] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, email));
+
+      if (!user || !user.password) {
+        res.status(401).json({
+          error: "Invalid credentials",
+        });
+        return;
+      }
+
+      const validPassword = await bcrypt.compare(password, user.password);
+
+      if (!validPassword) {
+        res.status(401).json({
+          error: "Invalid credentials",
+        });
+        return;
+      }
+
+      const token = signToken({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+      });
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+        },
+      });
+    } catch (err) {
+      req.log.error({ err }, "login error");
+
+      res.status(500).json({
+        error: "Login failed",
+      });
     }
   },
 );

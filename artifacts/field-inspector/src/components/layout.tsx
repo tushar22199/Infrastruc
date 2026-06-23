@@ -1,9 +1,21 @@
 import { useOfflineSync } from "@/lib/offline-sync";
 import { Link, useLocation } from "wouter";
-import { Activity, Map as MapIcon, PlusSquare, Database, Menu, Wifi, WifiOff, LogOut, ChevronDown, User, Rss } from "lucide-react";
+import {
+  Activity,
+  Map as MapIcon,
+  PlusSquare,
+  Database,
+  Menu,
+  Wifi,
+  WifiOff,
+  LogOut,
+  ChevronDown,
+  User,
+  Rss,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth } from "@/lib/auth";
 import { NotificationBell } from "@/components/notification-bell";
 import {
   DropdownMenu,
@@ -34,14 +46,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     user?.firstName && user?.lastName
       ? `${user.firstName[0]}${user.lastName[0]}`
       : user?.firstName
-      ? user.firstName[0]
-      : "E";
+        ? user.firstName[0]
+        : "E";
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground w-64 p-4">
       <div className="flex items-center gap-2 mb-8 px-2 select-none">
         <Activity className="h-6 w-6 text-primary" />
-        <span className="font-bold tracking-tight text-lg leading-tight uppercase">AUDITOR</span>
+        <span className="font-bold tracking-tight text-lg leading-tight uppercase">
+          AUDITOR
+        </span>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -68,16 +82,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Connection status */}
         <div
           className={`flex items-center gap-2 text-xs font-mono px-3 py-2 rounded-md ${
-            isOnline ? "bg-green-500/10 text-green-500" : "bg-destructive/10 text-destructive"
+            isOnline
+              ? "bg-green-500/10 text-green-500"
+              : "bg-destructive/10 text-destructive"
           }`}
         >
-          {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+          {isOnline ? (
+            <Wifi className="h-3 w-3" />
+          ) : (
+            <WifiOff className="h-3 w-3" />
+          )}
           {isOnline ? "SYS.ONLINE" : "SYS.OFFLINE"}
         </div>
         {queueCount > 0 && (
           <div className="text-xs text-muted-foreground px-3 py-0.5">
             {isSyncing ? (
-              <span className="animate-pulse">Syncing {queueCount} item{queueCount > 1 ? "s" : ""}…</span>
+              <span className="animate-pulse">
+                Syncing {queueCount} item{queueCount > 1 ? "s" : ""}…
+              </span>
             ) : (
               <span>
                 {queueCount} item{queueCount > 1 ? "s" : ""} waiting to sync
@@ -101,15 +123,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 />
               ) : (
                 <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[10px] font-bold text-primary uppercase">{initials}</span>
+                  <span className="text-[10px] font-bold text-primary uppercase">
+                    {initials}
+                  </span>
                 </div>
               )}
-              <span className="flex-1 truncate text-xs font-medium text-muted-foreground">{displayName}</span>
+              <span className="flex-1 truncate text-xs font-medium text-muted-foreground">
+                {displayName}
+              </span>
               <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="text-xs font-mono text-muted-foreground cursor-default" disabled>
+            <DropdownMenuItem
+              className="text-xs font-mono text-muted-foreground cursor-default"
+              disabled
+            >
               <User className="h-3 w-3 mr-2" />
               {displayName}
             </DropdownMenuItem>
@@ -147,13 +176,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border">
+            <SheetContent
+              side="left"
+              className="p-0 w-64 bg-sidebar border-sidebar-border"
+            >
               <SidebarContent />
             </SheetContent>
           </Sheet>
         </header>
 
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

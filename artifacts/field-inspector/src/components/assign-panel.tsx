@@ -6,7 +6,7 @@ import {
   getGetInspectionQueryKey,
   getListInspectionsQueryKey,
 } from "@workspace/api-client-react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserCheck, UserPlus, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,11 @@ interface AssignPanelProps {
   currentAssignedToName?: string | null;
 }
 
-export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedToName }: AssignPanelProps) {
+export function AssignPanel({
+  inspectionId,
+  currentAssignedTo,
+  currentAssignedToName,
+}: AssignPanelProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -37,12 +41,20 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
   const assign = useAssignInspection({
     mutation: {
       onSuccess: (data) => {
-        queryClient.setQueryData(getGetInspectionQueryKey(inspectionId), (old: unknown) =>
-          old && typeof old === "object"
-            ? { ...(old as object), assignedTo: data.assignedTo, assignedToName: data.assignedToName }
-            : old
+        queryClient.setQueryData(
+          getGetInspectionQueryKey(inspectionId),
+          (old: unknown) =>
+            old && typeof old === "object"
+              ? {
+                  ...(old as object),
+                  assignedTo: data.assignedTo,
+                  assignedToName: data.assignedToName,
+                }
+              : old,
         );
-        queryClient.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
+        queryClient.invalidateQueries({
+          queryKey: getListInspectionsQueryKey(),
+        });
         const name = data.assignedToName ?? "engineer";
         toast({
           title: "Assigned",
@@ -50,7 +62,11 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
         });
       },
       onError: () => {
-        toast({ title: "Assignment Failed", description: "Could not assign inspection.", variant: "destructive" });
+        toast({
+          title: "Assignment Failed",
+          description: "Could not assign inspection.",
+          variant: "destructive",
+        });
       },
     },
   });
@@ -68,13 +84,14 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
 
   // Include current user at the top if not already in engineer list
   const myEntry =
-    user &&
-    !engineers.some((e) => e.userId === user.id)
+    user && !engineers.some((e) => e.userId === user.id)
       ? [
           {
             userId: user.id,
             displayName:
-              `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email || "Me",
+              `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+              user.email ||
+              "Me",
           },
         ]
       : [];
@@ -93,13 +110,20 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
             <span className="text-sm font-semibold truncate">
               {currentAssignedToName ?? currentAssignedTo}
               {isAssignedToMe && (
-                <span className="ml-1.5 text-[10px] font-mono bg-primary/20 px-1 py-0.5 rounded">YOU</span>
+                <span className="ml-1.5 text-[10px] font-mono bg-primary/20 px-1 py-0.5 rounded">
+                  YOU
+                </span>
               )}
             </span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" disabled={assign.isPending}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 flex-shrink-0"
+                disabled={assign.isPending}
+              >
                 <ChevronDown className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -110,7 +134,9 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
                   onClick={() => handleAssign(eng.userId, eng.displayName)}
                   className={`text-xs cursor-pointer ${eng.userId === currentAssignedTo ? "font-bold text-primary" : ""}`}
                 >
-                  {eng.userId === user?.id ? `${eng.displayName} (You)` : eng.displayName}
+                  {eng.userId === user?.id
+                    ? `${eng.displayName} (You)`
+                    : eng.displayName}
                   {eng.userId === currentAssignedTo && " ✓"}
                 </DropdownMenuItem>
               ))}
@@ -136,7 +162,9 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
               onClick={() =>
                 handleAssign(
                   user.id,
-                  `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email || "Engineer"
+                  `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+                    user.email ||
+                    "Engineer",
                 )
               }
             >
@@ -148,7 +176,12 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
           {allEngineers.filter((e) => e.userId !== user?.id).length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs uppercase tracking-wider" disabled={assign.isPending}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 gap-1.5 text-xs uppercase tracking-wider"
+                  disabled={assign.isPending}
+                >
                   Assign to…
                   <ChevronDown className="h-3 w-3" />
                 </Button>
@@ -170,7 +203,9 @@ export function AssignPanel({ inspectionId, currentAssignedTo, currentAssignedTo
           )}
 
           {allEngineers.length === 0 && !user && (
-            <p className="text-xs text-muted-foreground italic">No engineers available yet.</p>
+            <p className="text-xs text-muted-foreground italic">
+              No engineers available yet.
+            </p>
           )}
         </div>
       )}

@@ -4,7 +4,7 @@ import {
   useAddComment,
   getListCommentsQueryKey,
 } from "@workspace/api-client-react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow, format } from "date-fns";
 import { MessageSquare, Send, Loader2 } from "lucide-react";
@@ -24,7 +24,10 @@ export function CommentsPanel({ inspectionId }: CommentsPanelProps) {
   const [draft, setDraft] = useState("");
 
   const { data: comments = [], isLoading } = useListComments(inspectionId, {
-    query: { queryKey: getListCommentsQueryKey(inspectionId), refetchInterval: 20_000 },
+    query: {
+      queryKey: getListCommentsQueryKey(inspectionId),
+      refetchInterval: 20_000,
+    },
   });
 
   const addComment = useAddComment({
@@ -32,7 +35,7 @@ export function CommentsPanel({ inspectionId }: CommentsPanelProps) {
       onSuccess: (newComment) => {
         qc.setQueryData(
           getListCommentsQueryKey(inspectionId),
-          (old: typeof comments) => [...(old ?? []), newComment]
+          (old: typeof comments) => [...(old ?? []), newComment],
         );
         setDraft("");
       },
@@ -87,7 +90,9 @@ export function CommentsPanel({ inspectionId }: CommentsPanelProps) {
         {!isLoading && comments.length === 0 && (
           <div className="text-center py-6 space-y-1">
             <MessageSquare className="h-6 w-6 text-muted-foreground/30 mx-auto" />
-            <p className="text-xs text-muted-foreground/60 font-mono">No field notes yet.</p>
+            <p className="text-xs text-muted-foreground/60 font-mono">
+              No field notes yet.
+            </p>
             <p className="text-[10px] text-muted-foreground/40">
               Add observations, measurements, or next steps below.
             </p>
@@ -156,7 +161,9 @@ export function CommentsPanel({ inspectionId }: CommentsPanelProps) {
         />
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground/50 font-mono">
-            {draft.length > 0 ? `${draft.length} chars` : "Ctrl+Enter to submit"}
+            {draft.length > 0
+              ? `${draft.length} chars`
+              : "Ctrl+Enter to submit"}
           </span>
           <Button
             type="submit"

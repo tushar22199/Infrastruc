@@ -2,15 +2,20 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me";
 
-export function signToken(payload: { id: string; email: string | null }) {
+export interface JwtUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+}
+
+export function signToken(payload: JwtUser) {
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: "7d",
   });
 }
 
-export function verifyToken(token: string) {
-  return jwt.verify(token, JWT_SECRET) as {
-    id: string;
-    email: string | null;
-  };
+export function verifyToken(token: string): JwtUser {
+  return jwt.verify(token, JWT_SECRET) as JwtUser;
 }
