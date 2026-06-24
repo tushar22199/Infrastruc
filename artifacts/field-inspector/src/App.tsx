@@ -1,3 +1,4 @@
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import LoginPage from "@/pages/login";
 import { AuthProvider } from "@/lib/auth";
 import { Switch, Route, Router as WouterRouter } from "wouter";
@@ -68,8 +69,9 @@ function LoginGate({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
+    <GoogleOAuthProvider clientId="368629552310-hj6paovh03h7dko2s66omr35qgvkoh84.apps.googleusercontent.com">
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <LoginGate>
@@ -80,6 +82,7 @@ function App() {
         </TooltipProvider>
       </QueryClientProvider>
     </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

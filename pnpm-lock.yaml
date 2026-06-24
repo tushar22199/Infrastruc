@@ -232,6 +232,9 @@ importers:
 
   artifacts/field-inspector:
     dependencies:
+      '@react-oauth/google':
+        specifier: ^0.13.5
+        version: 0.13.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21
@@ -1555,6 +1558,12 @@ packages:
       leaflet: ^1.9.0
       react: ^19.0.0
       react-dom: ^19.0.0
+
+  '@react-oauth/google@0.13.5':
+    resolution: {integrity: sha512-xQWri2s/3nNekZJ4uuov2aAfQYu83bN3864KcFqw2pK1nNbFurQIjPFDXhWaKH3IjYJ2r/9yyIIpsn5lMqrheQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@replit/vite-plugin-cartographer@0.5.21':
     resolution: {integrity: sha512-E5rco8Mov05QDfUOjoim3MVJdDX0/pBYql5Jay3w9cqmU/QOL6cEOUAjsBZPB/V8FEChsk++sZUrcWt1bHaAoQ==}
@@ -4387,6 +4396,11 @@ snapshots:
   '@react-leaflet/core@3.0.0(leaflet@1.9.4)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       leaflet: 1.9.4
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+
+  '@react-oauth/google@0.13.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 

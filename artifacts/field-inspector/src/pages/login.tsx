@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -65,6 +66,16 @@ export default function LoginPage() {
         <button type="submit" className="border px-4 py-2 w-full">
           Login
         </button>
+        <div className="flex justify-center pt-2">
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              console.log("Google credential:", credentialResponse);
+            }}
+            onError={() => {
+              console.log("Google Login Failed");
+            }}
+          />
+        </div>
       </form>
     </div>
   );
