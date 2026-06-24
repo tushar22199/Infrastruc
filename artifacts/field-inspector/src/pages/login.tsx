@@ -68,8 +68,28 @@ export default function LoginPage() {
         </button>
         <div className="flex justify-center pt-2">
           <GoogleLogin
-            onSuccess={(credentialResponse) => {
-              console.log("Google credential:", credentialResponse);
+            onSuccess={async (credentialResponse) => {
+              try {
+                const res = await fetch("/api/auth/google", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    credential: credentialResponse.credential,
+                  }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                  throw new Error(data.error || "Google login failed");
+                }
+
+                auth.login(data.token, data.user);
+              } catch (err: any) {
+                setError(err.message);
+              }
             }}
             onError={() => {
               console.log("Google Login Failed");

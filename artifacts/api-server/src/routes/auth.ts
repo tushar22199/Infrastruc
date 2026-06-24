@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { OAuth2Client } from "google-auth-library";
 import { eq } from "drizzle-orm";
 import { signToken } from "../lib/jwt";
 import * as oidc from "openid-client";
@@ -23,6 +24,9 @@ import {
 } from "../lib/auth";
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
+const googleClient = new OAuth2Client(
+  "368629552310-hj6paovh03h7dko2s66omr35qgvkoh84.apps.googleusercontent.com",
+);
 
 const router: IRouter = Router();
 router.post(
@@ -144,6 +148,82 @@ router.post(
 
       res.status(500).json({
         error: "Login failed",
+      });
+    }
+  },
+);
+
+router.post(
+  "/auth/google",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { credential } = req.body;
+
+      if (!credential) {
+        res.status(400).json({
+          error: "Missing Google credential",
+        });
+        return;
+      }
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience:
+          "368629552310-hj6paovh03h7dko2s66omr35qgvkoh84.apps.googleusercontent.com",
+      });
+
+      const payload = ticket.getPayload();
+
+      if (!payload?.email) {
+        res.status(401).json({
+          error: "Invalid Google account",
+        });
+        return;
+      }
+
+      let [user] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, payload.email));
+
+      if (!user) {
+        const [newUser] = await db
+          .insert(usersTable)
+          .values({
+            email: payload.email,
+            firstName: payload.given_name ?? null,
+            lastName: payload.family_name ?? null,
+            profileImageUrl: payload.picture ?? null,
+            isApproved: true,
+          })
+          .returning();
+
+        user = newUser;
+      }
+
+      const token = signToken({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+      });
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+        },
+      });
+    } catch (err) {
+      req.log.error({ err }, "google login error");
+
+      res.status(500).json({
+        error: "Google login failed",
       });
     }
   },
