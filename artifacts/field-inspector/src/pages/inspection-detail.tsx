@@ -2,6 +2,7 @@ import {
   useGetInspection,
   getGetInspectionQueryKey,
   useUpdateInspection,
+  useDeleteInspection,
   InspectionUpdateStatus,
 } from "@workspace/api-client-react";
 import { useParams, Link, useLocation } from "wouter";
@@ -57,6 +58,7 @@ export default function InspectionDetail() {
     query: { enabled: !!id, queryKey: getGetInspectionQueryKey(id) },
   });
   const updateMutation = useUpdateInspection();
+  const deleteMutation = useDeleteInspection();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -116,18 +118,7 @@ export default function InspectionDetail() {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(`/api/inspections/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error();
-      }
+      await deleteMutation.mutateAsync({ id });
 
       toast({
         title: "Inspection Deleted",
