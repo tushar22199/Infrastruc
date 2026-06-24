@@ -10,32 +10,16 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    setError("");
-
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      auth.login(data.token, data.user);
-    } catch (err: any) {
-      setError(err.message);
-    }
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
   }
 
   return (
@@ -70,7 +54,7 @@ export default function LoginPage() {
           <GoogleLogin
             onSuccess={async (credentialResponse) => {
               try {
-                const res = await fetch("/api/auth/google", {
+                const res = await fetch("https://infrastruc.onrender.com/api/auth/google", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
