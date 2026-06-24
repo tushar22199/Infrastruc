@@ -18,6 +18,9 @@ import LogInspection from "@/pages/log-inspection";
 import Inspections from "@/pages/inspections";
 import InspectionDetail from "@/pages/inspection-detail";
 import ActivityPage from "@/pages/activity";
+import { setBaseUrl } from "@workspace/api-client-react";
+
+setBaseUrl("https://infrastruc.onrender.com");
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,16 +75,16 @@ function App() {
     <GoogleOAuthProvider clientId="368629552310-hj6paovh03h7dko2s66omr35qgvkoh84.apps.googleusercontent.com">
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <LoginGate>
-            <Router />
-            </LoginGate>
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <LoginGate>
+                <Router />
+              </LoginGate>
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </AuthProvider>
     </GoogleOAuthProvider>
   );
 }
