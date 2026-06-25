@@ -22,10 +22,8 @@ function Feature({
 }) {
   return (
     <div className="flex gap-4 items-start">
-      <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flexshrink-0">
-        <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 border border-primary/30">
-            <Icon className="h-5 w-5 text-primary" />
-        </div>
+      <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+        <Icon className="h-5 w-5 text-primary" />
       </div>
       <div>
         <h3 className="font-semibold">{title}</h3>
@@ -78,13 +76,16 @@ export default function LoginPage() {
               <div className="mb-10">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="relative h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
-                    <div className="absolute insert-0rounded-xl bg-primary blur-xl opacity-40">
+                    <div className="absolute inset-0 rounded-xl bg-primary blur-xl opacity-40"></div>
+
+                    <ShieldCheck className="relative h-7 w-7 text-primary-foreground" />
                   </div>
 
                   <div>
                     <div className="font-bold tracking-widest text-primary">
                       AUDITOR
                     </div>
+
                     <div className="text-xs text-muted-foreground">
                       Infrastructure Monitoring Platform
                     </div>
@@ -94,7 +95,7 @@ export default function LoginPage() {
                 <h1 className="text-5xl lg:text-5xl font-black leading-none tracking-normal">
                   INFRASTRUCTURE
                   <br />
-                  <span className="text-primary">INTELLEGENCE</span>
+                  <span className="text-primary">INTELLIGENCE</span>
                 </h1>
 
                 <p className="mt-4 text-muted-foreground max-w-md">
@@ -142,7 +143,7 @@ export default function LoginPage() {
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="p-10 lg:p-12 flex flex-col justify-center bg-background/60 backdrop-blur-x1 border-1 border-white/10">
+          <div className="p-10 lg:p-12 flex flex-col justify-center bg-background/60 backdrop-blur-xl border-l border-white/10">
             <div className="mb-10">
               <h2 className="text-3xl font-bold">Management Portal</h2>
 
@@ -199,7 +200,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
-                className="w-full rounded-md border border-border bg-background p-3"
+                className="w-full rounded-lg border border-white/10 bg-background/60 px-4 py-3 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 placeholder="Username / Inspector ID"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -222,6 +223,14 @@ export default function LoginPage() {
                 Authorize Session →
               </button>
             </form>
+            <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                Secure Connection
+              </span>
+
+              <span>TLS 1.3 Encrypted</span>
+            </div>
           </div>
         </div>
       </div>
