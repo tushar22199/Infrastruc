@@ -1,11 +1,37 @@
 import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/lib/auth";
-function Feature({ text }: { text: string }) {
+
+import {
+  MapPinned,
+  Cloud,
+  FileCheck,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
+
+function Feature({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+}) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-2 w-2 rounded-full bg-primary" />
-      <span>{text}</span>
+    <div className="flex gap-4 items-start">
+      <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flexshrink-0">
+        <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 border border-primary/30">
+            <Icon className="h-5 w-5 text-primary" />
+        </div>
+      </div>
+      <div>
+        <h3 className="font-semibold">{title}</h3>
+
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      </div>
     </div>
   );
 }
@@ -17,7 +43,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
-     e.preventDefault();
+    e.preventDefault();
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: {
@@ -35,49 +61,89 @@ export default function LoginPage() {
       <div className="w-full max-w-6xl rounded-2xl border border-border overflow-hidden shadow-2xl bg-card">
         <div className="grid lg:grid-cols-2">
           {/* LEFT SIDE */}
-          <div className="relative bg-gradient-to-br from-background via-background to-secondary/20 p-12 flex flex-col justify-center">
-            <div className="mb-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                  ⚡
+
+          <div className="relative overflow-hidden bg-gradient-to-br from-background via-background to-secondary/20 p-12 flex flex-col justify-center">
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <img
+                src="/crane2.jpg"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover brightness-75 contrast-110 opacity-40"
+              />
+            </div>
+
+            {/* Dark Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/70 to-black/55" />
+            <div className="relative z-10">
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="relative h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
+                    <div className="absolute insert-0rounded-xl bg-primary blur-xl opacity-40">
+                  </div>
+
+                  <div>
+                    <div className="font-bold tracking-widest text-primary">
+                      AUDITOR
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Infrastructure Monitoring Platform
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <div className="font-bold tracking-widest text-primary">
-                    AUDITOR
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Infrastructure Monitoring Platform
-                  </div>
-                </div>
+                <h1 className="text-5xl lg:text-5xl font-black leading-none tracking-normal">
+                  INFRASTRUCTURE
+                  <br />
+                  <span className="text-primary">INTELLEGENCE</span>
+                </h1>
+
+                <p className="mt-4 text-muted-foreground max-w-md">
+                  Intelligent Field Inspection & Infrastructure Auditor
+                  Platform.
+                </p>
               </div>
 
-              <h1 className="text-6xl font-black tracking-tight leading-none">
-                INFRASTRUC
-              </h1>
+              <div className="space-y-6">
+                <Feature
+                  icon={MapPinned}
+                  title="Real-Time Field Auditing"
+                  subtitle="Capture and manage inspection data from any location."
+                />
 
-              <p className="mt-4 text-muted-foreground max-w-md">
-                Intelligent Field Inspection & Infrastructure Auditor Platform.
-              </p>
-            </div>
+                <Feature
+                  icon={Cloud}
+                  title="Offline Synchronization"
+                  subtitle="Continue working without internet and sync automatically."
+                />
 
-            <div className="space-y-5">
-              <Feature text="Real-Time Field Auditing" />
-              <Feature text="Offline Data Synchronization" />
-              <Feature text="Asset Geolocation Tracking" />
-              <Feature text="Automated PDF Audit Reports" />
-              <Feature text="Secure Role-Based Access" />
-              <Feature text="AI-Powered Infrastructure Insights" />
-            </div>
+                <Feature
+                  icon={FileCheck}
+                  title="Automated PDF Reports"
+                  subtitle="Generate professional audit reports instantly."
+                />
 
-            <div className="mt-12 text-xs text-muted-foreground">
-              ● ALL SYSTEMS OPERATIONAL
+                <Feature
+                  icon={ShieldCheck}
+                  title="Secure Role-Based Access"
+                  subtitle="Fine-grained permissions for every user role."
+                />
+
+                <Feature
+                  icon={Sparkles}
+                  title="AI-Powered Infrastructure Insights"
+                  subtitle="Next-generation intelligent inspection assistance."
+                />
+              </div>
+
+              <div className="mt-12 text-xs text-muted-foreground">
+                ● ALL SYSTEMS OPERATIONAL
+              </div>
             </div>
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="p-10 lg:p-12 flex flex-col justify-center bg-card">
-            <div className="mb-8">
+          <div className="p-10 lg:p-12 flex flex-col justify-center bg-background/60 backdrop-blur-x1 border-1 border-white/10">
+            <div className="mb-10">
               <h2 className="text-3xl font-bold">Management Portal</h2>
 
               <p className="text-muted-foreground mt-2">
@@ -85,7 +151,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="mb-6 flex justify-center">
+            <div className="mb-8 flex justify-center">
               <GoogleLogin
                 onSuccess={async (credentialResponse) => {
                   try {
@@ -140,7 +206,7 @@ export default function LoginPage() {
               />
 
               <input
-                className="w-full rounded-md border border-border bg-background p-3"
+                className="w-full rounded-lg border border-border bg-background p-3"
                 placeholder="Passcode"
                 type="password"
                 value={password}
@@ -151,7 +217,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full bg-primary text-primary-foreground rounded-md py-3 font-semibold"
+                className="w-full rounded-lg bg-primary py-3.5 font-semibold text-primary-foreground transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30"
               >
                 Authorize Session →
               </button>
