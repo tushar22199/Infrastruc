@@ -105,7 +105,7 @@ export default function Dashboard() {
     { month: "Mar", inspections: 15 },
     { month: "Apr", inspections: 27 },
     { month: "May", inspections: 23 },
-    { month: "Jun", inspections: summary?.totalInspections || 0 },
+    { month: "Jun", inspections: summary?.totalLogs || 0 },
   ];
 
   const severityData = [
