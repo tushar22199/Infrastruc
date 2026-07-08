@@ -50,7 +50,11 @@ function Router() {
 function LoginGate({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth();
 
-  if (loading) {
+  const bypassAuth =
+    import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === "true";
+  console.log(import.meta.env.VITE_BYPASS_AUTH);
+
+  if (loading && !bypassAuth) {
     return (
       <div className="min-h-screen bg-background dark flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
@@ -61,6 +65,10 @@ function LoginGate({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (bypassAuth) {
+    return <>{children}</>;
   }
 
   if (!user) {

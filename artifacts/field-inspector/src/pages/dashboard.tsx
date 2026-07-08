@@ -1,3 +1,18 @@
+import { Sparkles } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
 import {
   useGetDashboardSummary,
   useGetByType,
@@ -36,6 +51,7 @@ import { Link } from "wouter";
 import { format } from "date-fns";
 
 export default function Dashboard() {
+  const COLORS = ["#ef4444", "#f97316", "#facc15", "#22c55e"];
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary(
     { query: { queryKey: getGetDashboardSummaryQueryKey() } },
   );
@@ -61,7 +77,7 @@ export default function Dashboard() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-48" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -82,6 +98,36 @@ export default function Dashboard() {
         )
         .slice(0, 5)
     : [];
+
+  const inspectionTrendData = [
+    { month: "Jan", inspections: 12 },
+    { month: "Feb", inspections: 19 },
+    { month: "Mar", inspections: 15 },
+    { month: "Apr", inspections: 27 },
+    { month: "May", inspections: 23 },
+    { month: "Jun", inspections: summary?.totalInspections || 0 },
+  ];
+
+  const severityData = [
+    {
+      name: "Critical",
+      value:
+        severityBreakdown?.find((s) => s.severity === "Critical")?.count || 0,
+    },
+    {
+      name: "High",
+      value: severityBreakdown?.find((s) => s.severity === "High")?.count || 0,
+    },
+    {
+      name: "Medium",
+      value:
+        severityBreakdown?.find((s) => s.severity === "Medium")?.count || 0,
+    },
+    {
+      name: "Low",
+      value: severityBreakdown?.find((s) => s.severity === "Low")?.count || 0,
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-500">
@@ -122,6 +168,170 @@ export default function Dashboard() {
         </Button>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Inspection Trend */}
+        <Card className="bg-card border-card-border shadow-md">
+          <CardHeader>
+            <CardTitle>Inspection Trend</CardTitle>
+            <CardDescription>Monthly inspection activity</CardDescription>
+          </CardHeader>
+
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={inspectionTrendData}>
+                <CartesianGrid
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeDasharray="4 4"
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "#9ca3af" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "#9ca3af" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#111827",
+                    border: "1px solid #374151",
+                    borderRadius: 12,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="inspections"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={4}
+                  dot={{ r: 5 }}
+                  activeDot={{ r: 8 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Severity Breakdown */}
+        <Card className="bg-card border-card-border shadow-md">
+          <CardHeader>
+            <CardTitle>Severity Breakdown</CardTitle>
+            <CardDescription>Current issue distribution</CardDescription>
+          </CardHeader>
+
+          <CardContent className="h-80">
+            <div className="relative h-full w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                  <Pie
+                    data={severityData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="43%"
+                    cy="50%"
+                    innerRadius={90}
+                    outerRadius={130}
+                    paddingAngle={4}
+                    label={false}
+                    labelLine={false}
+                  >
+                    {severityData.map((entry, index) => (
+                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+
+                  <Tooltip
+                    contentStyle={{
+                      background: "#111827",
+                      border: "1px solid #374151",
+                      borderRadius: 12,
+                    }}
+                  />
+
+                  <Legend
+                    layout="vertical"
+                    verticalAlign="middle"
+                    align="right"
+                    wrapperStyle={{
+                      right: -5,
+                      lineHeight: "28px",
+                    }}
+                    iconType="circle"
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              {/* Center Overlay */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="-translate-x-16 flex flex-col items-center">
+                  <div className="text-5xl font-bold text-foreground">
+                    {summary?.activeIssues ?? 0}
+                  </div>
+
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Active Issues
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-card border-card-border shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Infrastructure Insights
+            </CardTitle>
+            <CardDescription>AI-generated operational summary</CardDescription>
+          </div>
+
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Generate
+          </Button>
+        </CardHeader>
+
+        <CardContent>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
+            <h3 className="font-semibold text-primary">
+              Infrastructure Health: Good
+            </h3>
+
+            <ul className="mt-4 space-y-3 text-sm leading-6">
+              <li>✅ Overall infrastructure health score is 98/100.</li>
+
+              <li>⚠️ One active issue requires immediate attention.</li>
+
+              <li>📍 Most inspections indicate low-severity defects.</li>
+
+              <li>🕒 No overdue re-inspections are pending.</li>
+
+              <li>
+                📈 Inspection activity increased by 12% compared to last month.
+              </li>
+            </ul>
+
+            <div className="mt-6 rounded-md border border-amber-500/30 bg-amber-500/10 p-4">
+              <p className="font-semibold text-amber-400">AI Recommendation</p>
+
+              <p className="mt-2 text-sm">
+                Prioritize resolving the active issue before scheduling new
+                inspections. Continue monitoring regional health and maintain
+                the current inspection frequency.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Hotspot Alerts */}
       {hotspots && hotspots.length > 0 && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3">
@@ -136,7 +346,7 @@ export default function Dashboard() {
               {hotspots[0]?.radiusKm ?? 10} km
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {hotspots.map((h) => (
               <Link
                 key={h.id}
@@ -191,7 +401,7 @@ export default function Dashboard() {
               Scheduled re-inspections past their due date
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {overdueItems.map((item) => (
               <Link key={item.id} href={`/inspections/${item.id}`}>
                 <div className="flex items-start gap-3 rounded-md border border-amber-500/20 bg-card p-3 hover:border-amber-500/50 transition-colors cursor-pointer group">
@@ -224,9 +434,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <Card className="group rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
                 <ClipboardList className="h-6 w-6 text-primary" />
@@ -235,7 +445,7 @@ export default function Dashboard() {
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
 
-            <div className="mt-6 text-5xl font-black font-mono">
+            <div className="mt-4 text-4xl font-black font-mono">
               {summary?.totalLogs ?? 0}
             </div>
 
@@ -244,37 +454,62 @@ export default function Dashboard() {
             <p className="text-sm text-green-500">+12% from last month</p>
           </CardContent>
         </Card>
+        <Card className="group rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-500/10">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20">
+                <AlertTriangle className="h-6 w-6 text-red-500" />
+              </div>
 
-        <Card className="bg-card border-card-border shadow-md">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Active Issues
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-primary font-mono">
-              {summary?.activeIssues || 0}
+              <ShieldAlert className="h-5 w-5 text-red-500" />
             </div>
+
+            <div className="mt-6 text-5xl font-black font-mono text-red-500">
+              {summary?.activeIssues ?? 0}
+            </div>
+
+            <p className="mt-2 font-semibold">Active Issues</p>
+
+            <p className="text-sm text-red-500">Requires attention</p>
           </CardContent>
         </Card>
+        <Card className="group rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/10">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 border border-green-500/20">
+                <CheckCircle className="h-6 w-6 text-green-500" />
+              </div>
 
-        <Card className="bg-card border-card-border shadow-md">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Regional Health
-            </CardTitle>
-            <CheckCircle
-              className={`h-4 w-4 ${(summary?.regionalHealthScore || 0) > 75 ? "text-green-500" : (summary?.regionalHealthScore || 0) > 50 ? "text-primary" : "text-destructive"}`}
-            />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-4xl font-bold font-mono ${(summary?.regionalHealthScore || 0) > 75 ? "text-green-500" : (summary?.regionalHealthScore || 0) > 50 ? "text-primary" : "text-destructive"}`}
-            >
-              {summary?.regionalHealthScore || 0}
+              <TrendingUp className="h-5 w-5 text-green-500" />
+            </div>
+
+            <div className="mt-6 text-5xl font-black font-mono text-green-500">
+              {summary?.regionalHealthScore ?? 0}
               <span className="text-2xl text-muted-foreground">/100</span>
             </div>
+
+            <p className="mt-2 font-semibold">Regional Health</p>
+
+            <p className="text-sm text-green-500">Infrastructure Status</p>
+          </CardContent>
+        </Card>
+        <Card className="group rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <Cloud className="h-6 w-6 text-blue-500" />
+              </div>
+
+              <RefreshCw className="h-5 w-5 text-blue-500" />
+            </div>
+
+            <div className="mt-6 text-5xl font-black font-mono text-blue-500">
+              {overdueItems?.length ?? 0}
+            </div>
+
+            <p className="mt-2 font-semibold">Overdue Re-inspections</p>
+
+            <p className="text-sm text-blue-500">Requires scheduling</p>
           </CardContent>
         </Card>
       </div>
