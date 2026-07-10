@@ -1,3 +1,4 @@
+import aiRouter from "./ai";
 import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/authMiddleware";
 import healthRouter from "./health";
@@ -17,7 +18,7 @@ router.use(healthRouter);
 router.use(authRouter);
 
 //router.use(requireAuth);
-
+router.use(aiRouter);
 router.use(inspectionsRouter);
 router.use(dashboardRouter);
 router.use(notificationsRouter);
