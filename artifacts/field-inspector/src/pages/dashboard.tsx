@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -55,6 +56,7 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary(
     { query: { queryKey: getGetDashboardSummaryQueryKey() } },
   );
+
   const { data: typeBreakdown, isLoading: isLoadingTypes } = useGetByType();
   const { data: severityBreakdown, isLoading: isLoadingSeverities } =
     useGetBySeverity();
@@ -62,6 +64,46 @@ export default function Dashboard() {
     useListInspections();
   const { data: hotspots } = useGetHotspots();
   const { data: overdueItems } = useGetOverdueReinspections();
+  const [aiInsight, setAiInsight] = useState("");
+  const [loadingAI, setLoadingAI] = useState(false);
+  const generateInsights = async () => {
+    try {
+      setLoadingAI(true);
+
+      const response = await fetch(
+        "https://infrastruc.onrender.com/api/ai/insights",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            totalInspections: summary?.totalLogs ?? 0,
+            activeIssues: summary?.activeIssues ?? 0,
+            regionalHealth: summary?.regionalHealthScore ?? 0,
+            overdueInspections: overdueItems?.length ?? 0,
+            severityBreakdown: severityData,
+          }),
+        },
+      );
+
+      const text = await response.text();
+      console.log("AI Response:", text);
+      return;
+      console.log(data);
+
+      if (data.success) {
+        setAiInsight(data.insight);
+      } else {
+        setAiInsight("Failed to generate AI insights.");
+      }
+    } catch (error) {
+      console.error(error);
+      setAiInsight("Error generating AI insights.");
+    } finally {
+      setLoadingAI(false);
+    }
+  };
   const handleExport = () => {
     if (summary && inspections) {
       exportAuditReport(summary, inspections);
@@ -292,42 +334,30 @@ export default function Dashboard() {
 
           <Button
             size="sm"
+            onClick={generateInsights}
+            disabled={loadingAI}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Generate
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${loadingAI ? "animate-spin" : ""}`}
+            />
+
+            {loadingAI ? "Generating..." : "Generate"}
           </Button>
         </CardHeader>
 
         <CardContent>
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
-            <h3 className="font-semibold text-primary">
-              Infrastructure Health: Good
-            </h3>
-
-            <ul className="mt-4 space-y-3 text-sm leading-6">
-              <li>✅ Overall infrastructure health score is 98/100.</li>
-
-              <li>⚠️ One active issue requires immediate attention.</li>
-
-              <li>📍 Most inspections indicate low-severity defects.</li>
-
-              <li>🕒 No overdue re-inspections are pending.</li>
-
-              <li>
-                📈 Inspection activity increased by 12% compared to last month.
-              </li>
-            </ul>
-
-            <div className="mt-6 rounded-md border border-amber-500/30 bg-amber-500/10 p-4">
-              <p className="font-semibold text-amber-400">AI Recommendation</p>
-
-              <p className="mt-2 text-sm">
-                Prioritize resolving the active issue before scheduling new
-                inspections. Continue monitoring regional health and maintain
-                the current inspection frequency.
-              </p>
-            </div>
+            {aiInsight ? (
+              <div className="whitespace-pre-wrap text-sm leading-7">
+                {aiInsight}
+              </div>
+            ) : (
+              <div className="text-center py-10 text-muted-foreground">
+                Click <strong>Generate</strong> to get AI-powered infrastructure
+                insights.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
