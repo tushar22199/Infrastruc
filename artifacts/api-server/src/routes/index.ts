@@ -18,7 +18,7 @@ router.use(healthRouter);
 router.use(authRouter);
 
 //router.use(requireAuth);
-router.use(aiRouter);
+router.use("/ai", aiRouter);
 router.use(inspectionsRouter);
 router.use(dashboardRouter);
 router.use(notificationsRouter);

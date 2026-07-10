@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY!,
 });
 
-aiRouter.post("/ai/insights", async (req, res) => {
+aiRouter.post("/insights", async (req, res) => {
   try {
     const {
       totalInspections,
