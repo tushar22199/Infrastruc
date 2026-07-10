@@ -53,12 +53,13 @@ Recommendation:
       success: true,
       insight: response.text,
     });
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    console.error("Gemini Error:", err);
 
     res.status(500).json({
       success: false,
-      message: "Failed to generate AI insights",
+      message: err?.message ?? String(err),
+      error: err,
     });
   }
 });
