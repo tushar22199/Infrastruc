@@ -7,60 +7,13 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY!,
 });
 
-aiRouter.post("/insights", async (req, res) => {
+aiRouter.get("/api/ai/models", async (_req, res) => {
   try {
-    const {
-      totalInspections,
-      activeIssues,
-      regionalHealth,
-      overdueInspections,
-      severityBreakdown,
-    } = req.body;
-
-    const prompt = `
-You are an expert infrastructure auditor.
-
-Analyze the following dashboard statistics and generate a concise operational summary.
-
-Dashboard Data:
-- Total Inspections: ${totalInspections}
-- Active Issues: ${activeIssues}
-- Regional Health Score: ${regionalHealth}/100
-- Overdue Re-inspections: ${overdueInspections}
-- Severity Breakdown:
-${JSON.stringify(severityBreakdown, null, 2)}
-
-Respond ONLY in this format:
-
-Infrastructure Health:
-- ...
-
-Key Insights:
-- ...
-- ...
-- ...
-
-Recommendation:
-- ...
-`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: prompt,
-    });
-
-    res.json({
-      success: true,
-      insight: response.text,
-    });
-  } catch (err: any) {
-    console.error("Gemini Error:", err);
-
-    res.status(500).json({
-      success: false,
-      message: err?.message ?? String(err),
-      error: err,
-    });
+    const models = await ai.models.list();
+    res.json(models);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json(err);
   }
 });
 
