@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY!,
 });
 
-aiRouter.get("/api/ai/models", async (_req, res) => {
+aiRouter.get("/models", async (_req, res) => {
   try {
     const models = await ai.models.list();
     res.json(models);
