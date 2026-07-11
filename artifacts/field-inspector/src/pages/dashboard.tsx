@@ -87,12 +87,14 @@ export default function Dashboard() {
         },
       );
 
-      const text = await response.text();
-      console.log("AI Response:", text);
-      return;
-      console.log(data);
+      const data = await response.json();
 
       if (data.success) {
+          setAiInsight(data.insight);
+      }
+      console.log(data);
+
+    if (data.success) {
         setAiInsight(data.insight);
       } else {
         setAiInsight("Failed to generate AI insights.");
