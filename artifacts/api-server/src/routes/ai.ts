@@ -12,7 +12,7 @@ aiRouter.post("/insights", async (_req, res) => {
     console.log("Starting Gemini request...");
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       contents: "Say hello in one sentence.",
     });
 
