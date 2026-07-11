@@ -12,7 +12,7 @@ aiRouter.post("/insights", async (_req, res) => {
     console.log("Starting Gemini request...");
 
     const response = await ai.models.generateContent({
-      model: "models/gemini-2.0-flash",
+      model: "gemini-2.5-flash-lite",
       contents: "Say hello in one sentence.",
     });
 
@@ -24,10 +24,14 @@ aiRouter.post("/insights", async (_req, res) => {
     });
   } catch (err: any) {
     console.error("Gemini Error:", err);
+    console.error("Message:", err?.message);
+    console.error("Status:", err?.status);
+    console.error("Response:", err?.response);
 
     res.status(500).json({
       success: false,
       message: err?.message,
+      error: err,
     });
   }
 });
