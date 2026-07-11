@@ -1,37 +1,61 @@
 import { Router } from "express";
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 
 const aiRouter = Router();
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
+const client = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
-aiRouter.post("/insights", async (_req, res) => {
+aiRouter.post("/insights", async (req, res) => {
   try {
-    console.log("Starting Gemini request...");
+    const {
+      totalInspections,
+      activeIssues,
+      regionalHealth,
+      overdueInspections,
+      severityBreakdown,
+    } = req.body;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: "Say hello in one sentence.",
+    const prompt = `
+You are an infrastructure auditing expert.
+
+Dashboard Data:
+Total inspections: ${totalInspections}
+Active issues: ${activeIssues}
+Regional health: ${regionalHealth}
+Overdue inspections: ${overdueInspections}
+
+Severity:
+${JSON.stringify(severityBreakdown)}
+
+Generate:
+- Infrastructure Health
+- Key Insights
+- Recommendation
+`;
+
+    const response = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
     });
-
-    console.log("Gemini replied!");
 
     res.json({
       success: true,
-      text: response.text,
+      insight: response.choices[0].message.content,
     });
-  } catch (err: any) {
-    console.error("Gemini Error:", err);
-    console.error("Message:", err?.message);
-    console.error("Status:", err?.status);
-    console.error("Response:", err?.response);
+  } catch (err) {
+    console.error(err);
 
     res.status(500).json({
       success: false,
-      message: err?.message,
-      error: err,
+      message: "Failed to generate AI insights",
     });
   }
 });
