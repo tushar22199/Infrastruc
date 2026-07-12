@@ -1,3 +1,4 @@
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { createContext, useContext, useEffect, useState } from "react";
 
 interface User {
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+     setAuthTokenGetter(() => localStorage.getItem("token"));
     const token = localStorage.getItem("token");
 
     if (!token) {
