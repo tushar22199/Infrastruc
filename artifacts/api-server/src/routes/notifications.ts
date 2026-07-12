@@ -1,3 +1,4 @@
+import { requireAuth } from "../middlewares/authMiddleware";
 import { Router } from "express";
 import { db, notificationsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
@@ -5,16 +6,12 @@ import { eq, and, desc } from "drizzle-orm";
 const router = Router();
 
 // GET /notifications — list for current user
-router.get("/notifications", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+router.get("/notifications", requireAuth, async (req, res) => {
   try {
     const rows = await db
       .select()
       .from(notificationsTable)
-      .where(eq(notificationsTable.userId, req.user.id))
+      .where(eq(notificationsTable.userId, req.user!.id))
       .orderBy(desc(notificationsTable.createdAt))
       .limit(50);
     res.json(rows);
@@ -25,20 +22,16 @@ router.get("/notifications", async (req, res) => {
 });
 
 // POST /notifications/mark-all-read
-router.post("/notifications/mark-all-read", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+router.post("/notifications/mark-all-read", requireAuth, async (req, res) => {
   try {
     const rows = await db
       .update(notificationsTable)
       .set({ read: true })
       .where(
         and(
-          eq(notificationsTable.userId, req.user.id),
-          eq(notificationsTable.read, false)
-        )
+          eq(notificationsTable.userId, req.user!.id),
+          eq(notificationsTable.read, false),
+        ),
       )
       .returning();
     res.json({ updated: rows.length });
@@ -49,12 +42,9 @@ router.post("/notifications/mark-all-read", async (req, res) => {
 });
 
 // PATCH /notifications/:id/read
-router.patch("/notifications/:id/read", async (req, res) => {
+router.patch("/notifications/:id/read", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+
   try {
     const [row] = await db
       .update(notificationsTable)
@@ -62,8 +52,8 @@ router.patch("/notifications/:id/read", async (req, res) => {
       .where(
         and(
           eq(notificationsTable.id, id),
-          eq(notificationsTable.userId, req.user.id)
-        )
+          eq(notificationsTable.userId, req.user!.id),
+        ),
       )
       .returning();
     if (!row) {
