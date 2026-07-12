@@ -7,6 +7,7 @@ interface User {
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
+  role: "ADMIN" | "INSPECTOR" | "VIEWER";
 }
 
 interface AuthContextType {

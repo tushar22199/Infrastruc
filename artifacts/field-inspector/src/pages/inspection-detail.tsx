@@ -1,3 +1,4 @@
+import { useAuth } from "@/lib/auth";
 import {
   useGetInspection,
   getGetInspectionQueryKey,
@@ -52,6 +53,7 @@ const createCustomIcon = (color: string) => {
 };
 
 export default function InspectionDetail() {
+  const { user } = useAuth();
   const params = useParams();
   const id = parseInt(params.id || "0", 10);
   const { data: inspection, isLoading } = useGetInspection(id, {
@@ -202,14 +204,16 @@ export default function InspectionDetail() {
             <Save className="h-4 w-4" />
           </Button>
 
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleDelete}
-            className="h-9 px-3"
-          >
-            Delete
-          </Button>
+          {user?.role === "ADMIN" && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDelete}
+              className="h-9 px-3"
+            >
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
