@@ -1,3 +1,5 @@
+import { requireAuth } from "../middlewares/authMiddleware";
+import { authorize } from "../middlewares/authorize";
 import { Router } from "express";
 import { db, inspectionsTable, notificationsTable, activityLogTable } from "@workspace/db";
 import { eq, desc, sql, inArray } from "drizzle-orm";
@@ -76,10 +78,11 @@ router.post("/inspections", async (req, res) => {
     return;
   }
   try {
-    const userId = req.isAuthenticated() ? req.user.id : null;
-    const userDisplayName = req.isAuthenticated()
-      ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "Engineer"
-      : "Engineer";
+    const userId = req.user!.id;
+
+    const userDisplayName =
+      `${req.user!.firstName ?? ""} ${req.user!.lastName ?? ""}`.trim() ||
+      "Engineer";
 
     const anyData = parsed.data as any;
     const geom = anyData.geometry as GeoJsonGeometry | undefined;
@@ -137,7 +140,7 @@ router.post("/inspections/batch", async (req, res) => {
     return;
   }
   try {
-    const uid = req.isAuthenticated() ? req.user.id : null;
+    const uid = req.user!.id;
     const rows = await db
       .insert(inspectionsTable)
       .values(
@@ -190,10 +193,10 @@ router.patch("/inspections/bulk-status", async (req, res) => {
   const newStatus = status as string;
 
   try {
-    const updaterName = req.isAuthenticated()
-      ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "A team member"
-      : "A team member";
-    const updaterId = req.isAuthenticated() ? req.user.id : null;
+    const updaterName =
+      `${req.user!.firstName ?? ""} ${req.user!.lastName ?? ""}`.trim() ||
+      "A team member";
+    const updaterId = req.user!.id;
 
     // Fetch existing records to detect status changes per item
     const existing = await db
@@ -326,10 +329,10 @@ router.patch("/inspections/:id", async (req, res) => {
     }
 
     if (newStatus && newStatus !== existing.status) {
-      const updaterName = req.isAuthenticated()
-        ? `${req.user.firstName ?? ""} ${req.user.lastName ?? ""}`.trim() || "A team member"
-        : "A team member";
-      const updaterId = req.isAuthenticated() ? req.user.id : null;
+      const updaterName =
+        `${req.user!.firstName ?? ""} ${req.user!.lastName ?? ""}`.trim() ||
+        "A team member";
+      const updaterId = req.user!.id;
       const message = `Status changed from "${existing.status}" to "${newStatus}" by ${updaterName}.`;
 
       // Notify the inspection owner
@@ -368,7 +371,11 @@ router.patch("/inspections/:id", async (req, res) => {
 });
 
 // DELETE /inspections/:id
-router.delete("/inspections/:id", async (req, res) => {
+router.delete(
+  "/inspections/:id",
+  requireAuth,
+  authorize(["ADMIN"]),
+  async (req, res) => {
   const parsed = DeleteInspectionParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });

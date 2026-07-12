@@ -8,6 +8,7 @@ export interface JwtUser {
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
+  role: "ADMIN" | "INSPECTOR" | "VIEWER";
 }
 
 export function signToken(payload: JwtUser) {

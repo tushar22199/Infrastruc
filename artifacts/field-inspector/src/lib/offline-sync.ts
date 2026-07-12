@@ -15,6 +15,7 @@ let rerunRequested = false;
 
 export function useOfflineSync() {
   const isOnline = useEffectiveOnline();
+  
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();

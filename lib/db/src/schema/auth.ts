@@ -3,12 +3,12 @@ import {
   boolean,
   index,
   jsonb,
+  pgEnum,
   pgTable,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
 
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessionsTable = pgTable(
   "sessions",
   {
@@ -19,7 +19,7 @@ export const sessionsTable = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const roleEnum = pgEnum("role", ["ADMIN", "INSPECTOR", "VIEWER"]);
 export const usersTable = pgTable("users", {
   id: varchar("id")
     .primaryKey()
@@ -32,6 +32,7 @@ export const usersTable = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  role: roleEnum("role").notNull().default("INSPECTOR"),
 
   isApproved: boolean("is_approved").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })

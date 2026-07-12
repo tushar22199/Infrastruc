@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../lib/jwt";
-
+import type { JwtUser } from "../lib/jwt";
 declare global {
   namespace Express {
     interface Request {
       isAuthenticated(): boolean;
-      user?: any;
+       user?: JwtUser;
     }
   }
 }

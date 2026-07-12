@@ -62,6 +62,7 @@ router.post(
           password: hashedPassword,
           firstName: firstName ?? null,
           lastName: lastName ?? null,
+          role: "INSPECTOR",
           isApproved: true,
         })
         .returning();
@@ -72,6 +73,7 @@ router.post(
         firstName: user.firstName,
         lastName: user.lastName,
         profileImageUrl: user.profileImageUrl,
+        role: user.role,
       });
 
       res.json({
@@ -131,6 +133,7 @@ router.post(
         firstName: user.firstName,
         lastName: user.lastName,
         profileImageUrl: user.profileImageUrl,
+        role: user.role,
       });
 
       res.json({
@@ -194,6 +197,7 @@ router.post(
             firstName: payload.given_name ?? null,
             lastName: payload.family_name ?? null,
             profileImageUrl: payload.picture ?? null,
+            role: "INSPECTOR",
             isApproved: true,
           })
           .returning();
@@ -207,6 +211,7 @@ router.post(
         firstName: user.firstName,
         lastName: user.lastName,
         profileImageUrl: user.profileImageUrl,
+        role: user.role,
       });
 
       res.json({
