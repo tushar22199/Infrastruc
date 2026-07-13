@@ -30,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isOnline, queueCount, isSyncing } = useOfflineSync();
   const { user, logout } = useAuth();
+  console.log(user);
   const navItems = [
     { href: "/", label: "Dashboard", icon: Activity },
     { href: "/map", label: "Map View", icon: MapIcon },

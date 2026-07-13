@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    fetch("/api/auth/user", {
+    fetch("https://infrastruc.onrender.com/api/auth/user", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
