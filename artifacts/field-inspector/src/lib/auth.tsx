@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-     setAuthTokenGetter(() => localStorage.getItem("token"));
+    setAuthTokenGetter(() => localStorage.getItem("token"));
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
       .then((r) => r.json())
       .then((data) => {
+        console.log("AUTH RESPONSE:", data);
         setUser(data.user);
       })
       .catch(() => {
