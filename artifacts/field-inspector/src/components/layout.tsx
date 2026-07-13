@@ -160,14 +160,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem
-              className="text-xs font-mono text-muted-foreground cursor-default"
-              disabled
-            >
-              <User className="h-3 w-3 mr-2" />
-              {displayName}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
               className="cursor-default"
               disabled
             >
@@ -180,6 +172,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
               </div>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              onClick={logout}
+              className="text-xs text-destructive focus:text-destructive cursor-pointer"
+            >
+              <LogOut className="h-3 w-3 mr-2" />
+              Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
