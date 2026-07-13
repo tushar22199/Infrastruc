@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { useOfflineSync } from "@/lib/offline-sync";
 import { Link, useLocation } from "wouter";
 import {
@@ -41,6 +42,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
     user?.firstName && user?.lastName
       ? `${user.firstName} ${user.lastName}`
       : user?.firstName || user?.email || "Engineer";
+
+  const roleLabel = {
+    ADMIN: "Administrator",
+    INSPECTOR: "Inspector",
+    VIEWER: "Viewer",
+  };
+
+  const roleVariant = {
+    ADMIN: "default",
+    INSPECTOR: "secondary",
+    VIEWER: "outline",
+  } as const;
 
   const initials =
     user?.firstName && user?.lastName
@@ -128,9 +141,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 </div>
               )}
-              <span className="flex-1 truncate text-xs font-medium text-muted-foreground">
-                {displayName}
-              </span>
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-xs font-medium">
+                  {displayName}
+                </p>
+
+                {user?.role && (
+                  <Badge
+                    variant={roleVariant[user.role]}
+                    className="mt-1 text-[10px] h-5"
+                  >
+                    {roleLabel[user.role]}
+                  </Badge>
+                )}
+              </div>
               <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
@@ -144,11 +168,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={logout}
-              className="text-xs text-destructive focus:text-destructive cursor-pointer"
+              className="cursor-default"
+              disabled
             >
-              <LogOut className="h-3 w-3 mr-2" />
-              Sign Out
+              <div className="flex flex-col">
+                <span className="font-medium">{displayName}</span>
+
+                {user?.role && (
+                  <span className="text-xs text-muted-foreground">
+                    {roleLabel[user.role]}
+                  </span>
+                )}
+              </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
