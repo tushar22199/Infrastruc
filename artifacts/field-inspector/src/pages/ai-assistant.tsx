@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,28 @@ export default function AIAssistant() {
       icon: MapPinned,
     },
   ];
+  const [input, setInput] = useState("");
+
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Welcome to Infrastructure Copilot.\n\nI can help you analyze inspections, summarize dashboard data, generate reports, answer engineering questions, and assist with infrastructure management.\n\nHow can I help you today?",
+    },
+  ]);
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: input,
+      },
+    ]);
+
+    setInput("");
+  };
   return (
     <div className="space-y-8">
 
@@ -100,43 +123,53 @@ export default function AIAssistant() {
 
             <div className="space-y-6">
 
-              {/* AI Message */}
-              <div className="flex gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Bot className="h-5 w-5 text-primary" />
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex gap-3 ${
+                    message.role === "user" ? "justify-end" : ""
+                  }`}
+                >
+                  {message.role === "assistant" && (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Bot className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+
+                  <div
+                    className={`rounded-xl p-4 max-w-3xl ${
+                      message.role === "assistant"
+                        ? "bg-muted"
+                        : "bg-primary text-primary-foreground"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                  </div>
                 </div>
-
-                <div className="rounded-xl bg-muted p-4 max-w-3xl">
-                  <p className="font-semibold mb-2">
-                    Infrastructure Copilot
-                  </p>
-
-                  <p className="text-sm text-muted-foreground">
-                    Hello! I'm your AI engineering assistant.
-                  </p>
-
-                  <p className="text-sm text-muted-foreground mt-3">
-                    I can help you:
-                  </p>
-
-                  <ul className="mt-2 ml-5 list-disc text-sm text-muted-foreground">
-                    <li>Summarize inspections</li>
-                    <li>Find critical infrastructure issues</li>
-                    <li>Generate reports</li>
-                    <li>Answer engineering questions</li>
-                    <li>Analyze inspection images</li>
-                  </ul>
-                </div>
-              </div>
+              ))}
 
               {/* Chat Input */}
               <div className="flex gap-3">
                 <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
                   placeholder="Ask Infrastructure Copilot anything..."
                   className="h-11"
                 />
 
-                <Button className="h-11 px-5">
+                <Button
+                  className="h-11 px-5"
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                >
                   <SendHorizontal className="h-4 w-4" />
                 </Button>
               </div>
