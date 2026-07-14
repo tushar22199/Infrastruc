@@ -1,3 +1,4 @@
+import AIAssistant from "@/pages/ai-assistant";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import LoginPage from "@/pages/login";
 import { AuthProvider } from "@/lib/auth";
@@ -36,6 +37,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/ai" component={AIAssistant} />
         <Route path="/map" component={MapView} />
         <Route path="/log" component={LogInspection} />
         <Route path="/inspections" component={Inspections} />
