@@ -84,6 +84,7 @@ router.post(
           firstName: user.firstName,
           lastName: user.lastName,
           profileImageUrl: user.profileImageUrl,
+          role: user.role,
         },
       });
     } catch (err) {
@@ -144,6 +145,7 @@ router.post(
           firstName: user.firstName,
           lastName: user.lastName,
           profileImageUrl: user.profileImageUrl,
+          role: user.role,
         },
       });
     } catch (err) {
@@ -222,6 +224,7 @@ router.post(
           firstName: user.firstName,
           lastName: user.lastName,
           profileImageUrl: user.profileImageUrl,
+          role: user.role,
         },
       });
     } catch (err) {
@@ -325,7 +328,7 @@ async function upsertUser(claims: Record<string, unknown>) {
 
 router.get("/auth/user", (req: Request, res: Response) => {
   req.log.info({ auth: req.isAuthenticated(), user: req.user }, "AUTH USER DEBUG");
-
+  console.log(req.user);
   res.json(
     GetCurrentAuthUserResponse.parse({
       user: req.isAuthenticated() ? req.user : null,
