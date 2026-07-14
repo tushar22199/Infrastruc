@@ -59,5 +59,34 @@ Generate:
     });
   }
 });
+aiRouter.post("/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
 
+    const response = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Infrastructure Copilot, an AI assistant for civil and infrastructure engineers. Help with inspections, defects, reports, maintenance, road engineering, bridge engineering, standards, and asset management.",
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+    });
+
+    res.json({
+      reply: response.choices[0].message.content,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      reply: "Sorry, something went wrong.",
+    });
+  }
+});
 export default aiRouter;

@@ -47,8 +47,57 @@ export default function AIAssistant() {
     },
   ];
   const [input, setInput] = useState("");
+  const sendMessage = async () => {
+    if (!input.trim()) return;
 
-  const [messages, setMessages] = useState([
+    const userMessage = input;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ]);
+
+    setInput("");
+
+    try {
+      const res = await fetch(
+        "https://infrastruc.onrender.com/api/ai/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: userMessage,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.reply,
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Something went wrong while contacting the AI.",
+        },
+      ]);
+    }
+  };
+  const [messages, setMessages] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([
     {
       role: "assistant",
       content:
@@ -158,7 +207,7 @@ export default function AIAssistant() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSend();
+                      sendMessage();
                     }
                   }}
                   placeholder="Ask Infrastructure Copilot anything..."
@@ -167,7 +216,7 @@ export default function AIAssistant() {
 
                 <Button
                   className="h-11 px-5"
-                  onClick={handleSend}
+                  onClick={sendMessage}
                   disabled={!input.trim()}
                 >
                   <SendHorizontal className="h-4 w-4" />
