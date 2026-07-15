@@ -68,10 +68,13 @@ Generate:
 });
 aiRouter.post("/chat", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { messages } = req.body;
     let inspections;
 
-    const question = message.toLowerCase();
+    const latestMessage =
+      messages[messages.length - 1]?.content ?? "";
+
+    const question = latestMessage.toLowerCase();
 
     if (question.includes("critical")) {
       inspections = await getCriticalInspections();
@@ -92,7 +95,7 @@ aiRouter.post("/chat", async (req, res) => {
           role: "user",
           content: `
         User Question:
-        ${message}
+        ${messages}
 
         Recent Inspections:
         ${JSON.stringify(inspections, null, 2)}
