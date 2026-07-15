@@ -2,7 +2,7 @@ import {
   getLatestInspections,
   getCriticalInspections,
   getActiveInspections,
-} from "../lib/inspection-tool";
+} from "../lib/ai/tools/inspection-tool";
 import { db, inspectionsTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { Router } from "express";
