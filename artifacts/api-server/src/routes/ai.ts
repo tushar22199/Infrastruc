@@ -1,3 +1,8 @@
+import {
+  getLatestInspections,
+  getCriticalInspections,
+  getActiveInspections,
+} from "../lib/inspection-tool";
 import { db, inspectionsTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { Router } from "express";
@@ -64,11 +69,17 @@ Generate:
 aiRouter.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
-    const inspections = await db
-    .select()
-    .from(inspectionsTable)
-    .orderBy(desc(inspectionsTable.createdAt))
-    .limit(20);
+    let inspections;
+
+    const question = message.toLowerCase();
+
+    if (question.includes("critical")) {
+      inspections = await getCriticalInspections();
+    } else if (question.includes("active")) {
+      inspections = await getActiveInspections();
+    } else {
+      inspections = await getLatestInspections();
+    }
     const response = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
