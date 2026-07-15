@@ -88,21 +88,34 @@ aiRouter.post("/chat", async (req, res) => {
       messages: [
         {
           role: "system",
-          content:
-            "You are Infrastructure Copilot, an AI assistant for civil and infrastructure engineers. Help with inspections, defects, reports, maintenance, road engineering, bridge engineering, standards, and asset management.",
-        },
-        {
-          role: "user",
           content: `
-        User Question:
-        ${messages}
+      You are Infrastructure Copilot, an AI assistant for civil and infrastructure engineers.
 
-        Recent Inspections:
-        ${JSON.stringify(inspections, null, 2)}
+      You help with:
 
-        Answer the user's question using the inspection data when relevant.
-        If the user asks something unrelated to inspections, answer normally.
-        `,
+      - Infrastructure inspections
+      - Defect analysis
+      - Maintenance planning
+      - Asset management
+      - Engineering standards
+      - Civil engineering questions
+
+      Whenever inspection data is provided, use it to answer the user's questions accurately.
+      `,
+        },
+
+        ...(messages as {
+          role: "user" | "assistant";
+          content: string;
+        }[]),
+
+        {
+          role: "system",
+          content: `
+      Current inspection data:
+
+      ${JSON.stringify(inspections, null, 2)}
+      `,
         },
       ],
     });
