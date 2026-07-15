@@ -1,3 +1,5 @@
+import { db, inspectionsTable } from "@workspace/db";
+import { desc } from "drizzle-orm";
 import { Router } from "express";
 import OpenAI from "openai";
 
@@ -62,7 +64,11 @@ Generate:
 aiRouter.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
-
+    const inspections = await db
+    .select()
+    .from(inspectionsTable)
+    .orderBy(desc(inspectionsTable.createdAt))
+    .limit(20);
     const response = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
@@ -73,7 +79,16 @@ aiRouter.post("/chat", async (req, res) => {
         },
         {
           role: "user",
-          content: message,
+          content: `
+        User Question:
+        ${message}
+
+        Recent Inspections:
+        ${JSON.stringify(inspections, null, 2)}
+
+        Answer the user's question using the inspection data when relevant.
+        If the user asks something unrelated to inspections, answer normally.
+        `,
         },
       ],
     });
