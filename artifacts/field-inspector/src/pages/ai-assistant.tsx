@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { SendHorizontal } from "lucide-react";
 import { Bot } from "lucide-react";
 import {
@@ -47,10 +49,21 @@ export default function AIAssistant() {
     },
   ];
   const [input, setInput] = useState("");
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([
+    {
+      role: "assistant",
+      content:
+        "Welcome to Infrastructure Copilot.\n\nI can help you analyze inspections, summarize dashboard data, generate reports, answer engineering questions, and assist with infrastructure management.\n\nHow can I help you today?",
+    },
+  ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendMessage = async (message?: string) => {
+    const userMessage = message ?? input;
 
-    const userMessage = input;
+    if (!userMessage.trim()) return;
 
     setMessages((prev) => [
       ...prev,
@@ -60,9 +73,11 @@ export default function AIAssistant() {
       },
     ]);
 
-    setInput("");
-
+    if (!message) {
+      setInput("");
+    }
     try {
+      setIsLoading(true);
       const res = await fetch(
         "https://infrastruc.onrender.com/api/ai/chat",
         {
@@ -71,7 +86,13 @@ export default function AIAssistant() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: userMessage,
+            messages: [
+              ...messages,
+              {
+                role: "user",
+                content: userMessage,
+              },
+            ],
           }),
         }
       );
@@ -85,7 +106,9 @@ export default function AIAssistant() {
           content: data.reply,
         },
       ]);
+      setIsLoading(false);
     } catch {
+      setIsLoading(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -95,28 +118,19 @@ export default function AIAssistant() {
       ]);
     }
   };
-  const [messages, setMessages] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([
-    {
-      role: "assistant",
-      content:
-        "Welcome to Infrastructure Copilot.\n\nI can help you analyze inspections, summarize dashboard data, generate reports, answer engineering questions, and assist with infrastructure management.\n\nHow can I help you today?",
-    },
-  ]);
-  const handleSend = () => {
-    if (!input.trim()) return;
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: input,
-      },
-    ]);
-
-    setInput("");
-  };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages, isLoading]);
+ 
+  
+  const suggestedPrompts = [
+    "Summarize today's inspections",
+    "Show all critical inspections",
+    "Generate a maintenance report",
+    "Which inspections require immediate attention?",
+  ];
   return (
     <div className="space-y-8">
 
@@ -164,6 +178,25 @@ export default function AIAssistant() {
             </button>
           ))}
         </div>
+
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Suggested Questions
+          </h2>
+
+          <div className="flex flex-wrap gap-2">
+            {suggestedPrompts.map((prompt) => (
+              <Button
+                key={prompt}
+                variant="outline"
+                onClick={() => sendMessage(prompt)}
+              >
+                {prompt}
+              </Button>
+            ))}
+          </div>
+        </div>
+        
         <Card className="mt-8 border shadow-sm">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-6">
@@ -178,6 +211,7 @@ export default function AIAssistant() {
                   className={`flex gap-3 ${
                     message.role === "user" ? "justify-end" : ""
                   }`}
+                  
                 >
                   {message.role === "assistant" && (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -192,12 +226,41 @@ export default function AIAssistant() {
                         : "bg-primary text-primary-foreground"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">
-                      {message.content}
-                    </p>
+                    {message.role === "assistant" ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
+
+              {isLoading && (
+                <div className="flex gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Bot className="h-5 w-5 text-primary animate-pulse" />
+                  </div>
+
+                  <div className="rounded-xl bg-muted p-4">
+                    <p className="font-semibold">
+                      Infrastructure Copilot
+                    </p>
+
+                    <p className="text-sm text-muted-foreground animate-pulse">
+                      Thinking...
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+              
+             
 
               {/* Chat Input */}
               <div className="flex gap-3">
@@ -216,7 +279,7 @@ export default function AIAssistant() {
 
                 <Button
                   className="h-11 px-5"
-                  onClick={sendMessage}
+                  onClick={() => sendMessage()}
                   disabled={!input.trim()}
                 >
                   <SendHorizontal className="h-4 w-4" />
