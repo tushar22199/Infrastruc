@@ -28,7 +28,7 @@ import {
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 const googleClient = new OAuth2Client(
-  "368629552310-hj6paovh03h7dko2s66omr35qgvkoh84.apps.googleusercontent.com",
+   process.env.GOOGLE_CLIENT_ID!,
 );
 
 const router: IRouter = Router();
@@ -172,7 +172,7 @@ router.post(
       const ticket = await googleClient.verifyIdToken({
         idToken: credential,
         audience:
-          "368629552310-hj6paovh03h7dko2s66omr35qgvkoh84.apps.googleusercontent.com",
+          process.env.GOOGLE_CLIENT_ID,
       });
 
       const payload = ticket.getPayload();
