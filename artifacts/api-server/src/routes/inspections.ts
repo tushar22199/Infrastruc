@@ -57,7 +57,10 @@ function withGeometry<T extends { geometry: unknown; latitude: number; longitude
 }
 
 // GET /inspections
-router.get("/inspections", async (req, res) => {
+router.get(
+  "/inspections",
+  requireAuth,
+  async (req, res) => {
   try {
     const rows = await db
       .select()
@@ -71,7 +74,11 @@ router.get("/inspections", async (req, res) => {
 });
 
 // POST /inspections
-router.post("/inspections", async (req, res) => {
+router.post(
+  "/inspections",
+  requireAuth,
+  authorize(["ADMIN", "INSPECTOR"]),
+  async (req, res) => {
   const parsed = CreateInspectionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -133,7 +140,11 @@ router.post("/inspections", async (req, res) => {
 });
 
 // POST /inspections/batch
-router.post("/inspections/batch", async (req, res) => {
+router.post(
+  "/inspections/batch",
+  requireAuth,
+  authorize(["ADMIN", "INSPECTOR"]),
+  async (req, res) => {
   const parsed = BatchCreateInspectionsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -176,7 +187,11 @@ router.post("/inspections/batch", async (req, res) => {
 });
 
 // PATCH /inspections/bulk-status  (must be registered BEFORE /:id to avoid route conflict)
-router.patch("/inspections/bulk-status", async (req, res) => {
+router.patch(
+  "/inspections/bulk-status",
+  requireAuth,
+  authorize(["ADMIN", "INSPECTOR"]),
+  async (req, res) => {
   const { ids, status } = req.body as { ids?: unknown; status?: unknown };
 
   if (
@@ -250,7 +265,10 @@ router.patch("/inspections/bulk-status", async (req, res) => {
 });
 
 // GET /inspections/:id
-router.get("/inspections/:id", async (req, res) => {
+    router.get(
+      "/inspections/:id",
+      requireAuth,
+      async (req, res) => {
   const parsed = GetInspectionParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -273,7 +291,11 @@ router.get("/inspections/:id", async (req, res) => {
 });
 
 // PATCH /inspections/:id
-router.patch("/inspections/:id", async (req, res) => {
+    router.patch(
+      "/inspections/:id",
+      requireAuth,
+      authorize(["ADMIN", "INSPECTOR"]),
+      async (req, res) => {
   const paramsParsed = UpdateInspectionParams.safeParse({ id: Number(req.params.id) });
   if (!paramsParsed.success) {
     res.status(400).json({ error: "Invalid id" });

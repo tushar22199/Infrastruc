@@ -1,3 +1,4 @@
+import { requireAuth } from "../middlewares/authMiddleware";
 import { Router } from "express";
 import { db, activityLogTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
@@ -5,7 +6,10 @@ import { desc } from "drizzle-orm";
 const router = Router();
 
 // GET /activity
-router.get("/activity", async (req, res) => {
+router.get(
+  "/activity",
+  requireAuth,
+  async (req, res) => {
   const rawLimit = Number(req.query.limit);
   const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50;
 

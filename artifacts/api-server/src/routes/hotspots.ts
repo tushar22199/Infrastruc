@@ -1,3 +1,4 @@
+import { requireAuth } from "../middlewares/authMiddleware";
 import { Router } from "express";
 import { db, inspectionsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
@@ -59,7 +60,10 @@ function clusterInspections(
 }
 
 // GET /dashboard/hotspots
-router.get("/dashboard/hotspots", async (req, res) => {
+router.get(
+  "/dashboard/hotspots",
+  requireAuth,
+  async (req, res) => {
   const rawRadius = Number(req.query.radiusKm);
   const radiusKm = Number.isFinite(rawRadius) && rawRadius > 0 ? Math.min(rawRadius, 500) : 10;
 

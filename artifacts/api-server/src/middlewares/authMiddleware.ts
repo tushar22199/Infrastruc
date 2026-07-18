@@ -29,7 +29,7 @@ export async function authMiddleware(
   next: NextFunction,
 ) {
   req.isAuthenticated = function () {
-    return !!this.user;
+    return this.user !== undefined;
   };
 
   const authHeader = req.headers.authorization;
@@ -39,10 +39,12 @@ export async function authMiddleware(
   }
 
   try {
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.substring(7).trim();
     req.user = verifyToken(token);
-  } catch {
-    req.user = undefined;
+  } 
+  catch (err) {
+      req.log.warn({ err }, "Invalid JWT");
+      req.user = undefined;
   }
 
   next();

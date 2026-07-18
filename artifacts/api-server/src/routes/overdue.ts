@@ -1,3 +1,4 @@
+import { requireAuth } from "../middlewares/authMiddleware";
 import { Router } from "express";
 import { db, inspectionsTable } from "@workspace/db";
 import { isNotNull, lte, sql } from "drizzle-orm";
@@ -5,7 +6,10 @@ import { isNotNull, lte, sql } from "drizzle-orm";
 const router = Router();
 
 // GET /dashboard/overdue-reinspections
-router.get("/dashboard/overdue-reinspections", async (req, res) => {
+router.get(
+  "/dashboard/overdue-reinspections",
+  requireAuth,
+  async (req, res) => {
   try {
     const now = new Date();
 

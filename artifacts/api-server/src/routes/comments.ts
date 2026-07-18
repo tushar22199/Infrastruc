@@ -7,7 +7,10 @@ import { eq, asc } from "drizzle-orm";
 const router = Router();
 
 // GET /inspections/:id/comments
-router.get("/inspections/:id/comments", async (req, res) => {
+router.get(
+  "/inspections/:id/comments",
+  requireAuth,
+  async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     res.status(400).json({ error: "Invalid id" });

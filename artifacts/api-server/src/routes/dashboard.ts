@@ -1,3 +1,4 @@
+import { requireAuth } from "../middlewares/authMiddleware";
 import { Router } from "express";
 import { db, inspectionsTable, activityLogTable } from "@workspace/db";
 import { eq, desc, count, and, isNotNull, sql } from "drizzle-orm";
@@ -14,7 +15,10 @@ function computeHealthScore(
 }
 
 // GET /dashboard/summary
-router.get("/dashboard/summary", async (req, res) => {
+router.get(
+  "/dashboard/summary",
+  requireAuth,
+  async (req, res) => {
   try {
     const all = await db.select().from(inspectionsTable);
     const totalLogs = all.length;
@@ -40,7 +44,10 @@ router.get("/dashboard/summary", async (req, res) => {
 });
 
 // GET /dashboard/by-type
-router.get("/dashboard/by-type", async (req, res) => {
+router.get(
+  "/dashboard/by-type",
+  requireAuth,
+  async (req, res) => {
   try {
     const all = await db.select().from(inspectionsTable);
     const map = new Map<string, number>();
@@ -59,7 +66,10 @@ router.get("/dashboard/by-type", async (req, res) => {
 });
 
 // GET /dashboard/by-severity
-router.get("/dashboard/by-severity", async (req, res) => {
+router.get(
+  "/dashboard/by-severity",
+  requireAuth,
+  async (req, res) => {
   try {
     const all = await db.select().from(inspectionsTable);
     const map = new Map<string, number>();
@@ -78,7 +88,10 @@ router.get("/dashboard/by-severity", async (req, res) => {
 });
 
 // GET /dashboard/recent
-router.get("/dashboard/recent", async (req, res) => {
+router.get(
+  "/dashboard/recent",
+  requireAuth,
+  async (req, res) => {
   try {
     const rows = await db
       .select()
@@ -93,7 +106,10 @@ router.get("/dashboard/recent", async (req, res) => {
 });
 
 // GET /dashboard/engineers
-router.get("/dashboard/engineers", async (req, res) => {
+router.get(
+  "/dashboard/engineers",
+  requireAuth,
+  async (req, res) => {
   try {
     // Collect distinct (userId, displayName) pairs from activity log
     const rows = await db

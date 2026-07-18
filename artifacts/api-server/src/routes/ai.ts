@@ -1,3 +1,4 @@
+import { requireAuth } from "../middlewares/authMiddleware";
 import {
   getLatestInspections,
   getCriticalInspections,
@@ -15,7 +16,10 @@ const client = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
-aiRouter.post("/insights", async (req, res) => {
+aiRouter.post(
+  "/insights",
+  requireAuth,
+  async (req, res) => {
   try {
     const {
       totalInspections,
@@ -66,7 +70,10 @@ Generate:
     });
   }
 });
-aiRouter.post("/chat", async (req, res) => {
+aiRouter.post(
+  "/chat",
+  requireAuth,
+  async (req, res) => {
   try {
     const { messages } = req.body;
     let inspections;
