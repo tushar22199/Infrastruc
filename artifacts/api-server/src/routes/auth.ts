@@ -1,3 +1,6 @@
+import { LoginSchema, RegisterSchema } from "@workspace/api-zod";
+import { validate } from "../middlewares/validate";
+import { authLimiter } from "../middlewares/rateLimiter";
 import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 import { eq } from "drizzle-orm";
@@ -31,16 +34,13 @@ const googleClient = new OAuth2Client(
 const router: IRouter = Router();
 router.post(
   "/auth/register",
+  authLimiter,
+    validate(RegisterSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, password, firstName, lastName } = req.body;
 
-      if (!email || !password) {
-        res.status(400).json({
-          error: "Email and password are required",
-        });
-        return;
-      }
+     
       const existing = await db
         .select()
         .from(usersTable)
@@ -96,16 +96,13 @@ router.post(
 );
 router.post(
   "/auth/login",
+   authLimiter,
+    validate(LoginSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, password } = req.body;
 
-      if (!email || !password) {
-        res.status(400).json({
-          error: "Email and password are required",
-        });
-        return;
-      }
+     
 
       const [user] = await db
         .select()
@@ -160,6 +157,7 @@ router.post(
 
 router.post(
   "/auth/google",
+  authLimiter,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { credential } = req.body;
