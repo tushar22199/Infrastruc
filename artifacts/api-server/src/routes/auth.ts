@@ -46,7 +46,13 @@ router.post(
           isApproved: isUserApproved(email),
         })
         .returning();
-
+      if (!user.isApproved) {
+        res.status(403).json({
+          error:
+            "Your account has not been approved. Please contact an administrator.",
+        });
+        return;
+      }
       const token = signToken({
         id: user.id,
         email: user.email,
