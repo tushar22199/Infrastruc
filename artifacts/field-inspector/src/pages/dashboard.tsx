@@ -70,12 +70,14 @@ export default function Dashboard() {
     try {
       setLoadingAI(true);
 
+      const token = localStorage.getItem("token");
       const response = await fetch(
         "https://infrastruc.onrender.com/api/ai/insights",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             totalInspections: summary?.totalLogs ?? 0,
