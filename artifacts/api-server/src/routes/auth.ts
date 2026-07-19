@@ -63,7 +63,7 @@ router.post(
           firstName: firstName ?? null,
           lastName: lastName ?? null,
           role: "INSPECTOR",
-          isApproved: true,
+          isApproved: isUserApproved(email),
         })
         .returning();
 
@@ -115,12 +115,19 @@ router.post(
         });
         return;
       }
+      
 
       const validPassword = await bcrypt.compare(password, user.password);
 
       if (!validPassword) {
         res.status(401).json({
           error: "Invalid credentials",
+        });
+        return;
+      }
+      if (!user.isApproved) {
+        res.status(403).json({
+          error: "Your account has not been approved. Please contact an administrator.",
         });
         return;
       }
@@ -198,11 +205,17 @@ router.post(
             lastName: payload.family_name ?? null,
             profileImageUrl: payload.picture ?? null,
             role: "INSPECTOR",
-            isApproved: true,
+            isApproved: isUserApproved(payload.email),
           })
           .returning();
 
         user = newUser;
+      }
+      if (!user.isApproved) {
+        res.status(403).json({
+          error: "Your account has not been approved. Please contact an administrator.",
+        });
+        return;
       }
 
       const token = signToken({
@@ -287,13 +300,21 @@ function getAllowedUserIds(): Set<string> | null {
   return ids.length > 0 ? new Set(ids) : null;
 }
 
+function isUserApproved(identifier: string): boolean {
+  const allowedIds = getAllowedUserIds();
+
+  if (allowedIds === null) {
+    return true;
+  }
+
+  return allowedIds.has(identifier.toLowerCase());
+}
+
 async function upsertUser(claims: Record<string, unknown>) {
   const userId = claims.sub as string;
-  const allowedIds = getAllowedUserIds();
-  // When no allowlist is configured, approve every authenticated user.
-  // When an allowlist is configured, only listed IDs receive approval.
-  const isApproved = allowedIds === null ? true : allowedIds.has(userId);
+  const email = (claims.email as string | undefined)?.toLowerCase();
 
+  const isApproved = email ? isUserApproved(email) : false;
   const profileData = {
     email: (claims.email as string) || null,
     firstName: (claims.first_name as string) || null,
