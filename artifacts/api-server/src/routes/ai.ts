@@ -278,4 +278,13 @@ aiRouter.post(
     }
   }
 );
+aiRouter.get("/models", async (req, res) => {
+  try {
+    const models = await client.models.list();
+    res.json(models);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json(err);
+  }
+});
 export default aiRouter;
