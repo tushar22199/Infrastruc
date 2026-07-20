@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import {
@@ -57,7 +57,7 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary(
     { query: { queryKey: getGetDashboardSummaryQueryKey() } },
   );
-  const [location] = useLocation();
+  
   const { data: typeBreakdown, isLoading: isLoadingTypes } = useGetByType();
   const { data: severityBreakdown, isLoading: isLoadingSeverities } =
     useGetBySeverity();
@@ -133,12 +133,17 @@ export default function Dashboard() {
     }
   };
   useEffect(() => {
-     console.log(location);
-    if (location.includes("generateAI=true")) {
-      console.log("Auto generating...");
+    const params = new URLSearchParams(window.location.search);
+
+    if (
+      params.get("generateAI") === "true" &&
+      summary &&
+      severityBreakdown
+    ) {
       generateInsights();
+      window.history.replaceState({}, "", "/");
     }
-  }, [location]);
+  }, [summary, severityBreakdown]);
   const handleExport = () => {
     if (summary && inspections) {
       exportAuditReport(summary, inspections);
