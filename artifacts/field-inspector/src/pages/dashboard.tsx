@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -56,7 +57,7 @@ export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary(
     { query: { queryKey: getGetDashboardSummaryQueryKey() } },
   );
-
+  const [location] = useLocation();
   const { data: typeBreakdown, isLoading: isLoadingTypes } = useGetByType();
   const { data: severityBreakdown, isLoading: isLoadingSeverities } =
     useGetBySeverity();
@@ -66,6 +67,28 @@ export default function Dashboard() {
   const { data: overdueItems } = useGetOverdueReinspections();
   const [aiInsight, setAiInsight] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
+  
+  const severityData = [
+    {
+      name: "Critical",
+      value:
+        severityBreakdown?.find((s) => s.severity === "Critical")?.count || 0,
+    },
+    {
+      name: "High",
+      value: severityBreakdown?.find((s) => s.severity === "High")?.count || 0,
+    },
+    {
+      name: "Medium",
+      value:
+        severityBreakdown?.find((s) => s.severity === "Medium")?.count || 0,
+    },
+    {
+      name: "Low",
+      value: severityBreakdown?.find((s) => s.severity === "Low")?.count || 0,
+    },
+  ];
+  
   const generateInsights = async () => {
     try {
       setLoadingAI(true);
@@ -93,6 +116,7 @@ export default function Dashboard() {
 
       if (data.success) {
           setAiInsight(data.insight);
+        window.history.replaceState({}, "", "/");
       }
       console.log(data);
 
@@ -108,6 +132,11 @@ export default function Dashboard() {
       setLoadingAI(false);
     }
   };
+  useEffect(() => {
+    if (location.includes("generateAI=true")) {
+      generateInsights();
+    }
+  }, [location]);
   const handleExport = () => {
     if (summary && inspections) {
       exportAuditReport(summary, inspections);
@@ -154,26 +183,7 @@ export default function Dashboard() {
     { month: "Jun", inspections: summary?.totalLogs || 0 },
   ];
 
-  const severityData = [
-    {
-      name: "Critical",
-      value:
-        severityBreakdown?.find((s) => s.severity === "Critical")?.count || 0,
-    },
-    {
-      name: "High",
-      value: severityBreakdown?.find((s) => s.severity === "High")?.count || 0,
-    },
-    {
-      name: "Medium",
-      value:
-        severityBreakdown?.find((s) => s.severity === "Medium")?.count || 0,
-    },
-    {
-      name: "Low",
-      value: severityBreakdown?.find((s) => s.severity === "Low")?.count || 0,
-    },
-  ];
+  
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-500">
@@ -283,7 +293,7 @@ export default function Dashboard() {
                     label={false}
                     labelLine={false}
                   >
-                    {severityData.map((entry, index) => (
+                    {severityData.map((_, index) => (
                       <Cell key={index} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

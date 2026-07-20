@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,31 +19,37 @@ import {
 export default function AIAssistant() {
   const quickActions = [
     {
+      id: "dashboard-summary",
       title: "Dashboard Summary",
       description: "Summarize inspection statistics and trends.",
       icon: BarChart3,
     },
     {
+      id: "critical-issues",
       title: "Find Critical Issues",
       description: "Locate high-priority inspections instantly.",
       icon: AlertTriangle,
     },
     {
+      id: "generate-report",
       title: "Generate Report",
       description: "Create professional inspection reports.",
       icon: FileText,
     },
     {
+      id: "engineering-standards",
       title: "Engineering Standards",
       description: "Search codes and compliance requirements.",
       icon: Search,
     },
     {
+      id: "analyze-image",
       title: "Analyze Inspection Image",
       description: "AI-powered defect detection from photos.",
       icon: Image,
     },
     {
+      id: "hotspots",
       title: "Infrastructure Hotspots",
       description: "Find locations needing immediate attention.",
       icon: MapPinned,
@@ -54,6 +61,7 @@ export default function AIAssistant() {
   const [imageAnalysis, setImageAnalysis] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [, navigate] = useLocation();
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
   >([
@@ -64,14 +72,18 @@ export default function AIAssistant() {
     },
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const handleQuickAction = (title: string) => {
-    switch (title) {
-      case "Analyze Inspection Image":
+  const handleQuickAction = (actionId: string) => {
+    switch (actionId) {
+      case "dashboard-summary":
+        navigate("/?generateAI=true");
+        break;
+
+      case "analyze-image":
         fileInputRef.current?.click();
         break;
 
       default:
-        sendMessage(title);
+        sendMessage(actionId);
         break;
     }
   };
@@ -221,7 +233,7 @@ export default function AIAssistant() {
           {quickActions.map((action) => (
            <button
              key={action.title}
-             onClick={() => handleQuickAction(action.title)}
+             onClick={() => handleQuickAction(action.id)}
              className="rounded-xl border bg-card p-5 text-left transition-all hover:border-primary hover:shadow-md"
            >
               <action.icon className="mb-4 h-6 w-6 text-primary" />
