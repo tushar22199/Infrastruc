@@ -32,6 +32,17 @@ const inspectionAgent: Tool = {
   description:
     "Retrieve inspections, critical issues, active inspections and recent inspections.",
 
+  canHandle(question: string) {
+    const q = question.toLowerCase();
+
+    return (
+      q.includes("inspection") ||
+      q.includes("critical") ||
+      q.includes("active") ||
+      q.includes("latest")
+    );
+  },
+
   async execute(question: string) {
     const q = question.toLowerCase();
 
