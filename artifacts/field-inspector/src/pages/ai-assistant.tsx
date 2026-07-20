@@ -49,6 +49,10 @@ export default function AIAssistant() {
     },
   ];
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageAnalysis, setImageAnalysis] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
@@ -60,6 +64,17 @@ export default function AIAssistant() {
     },
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const handleQuickAction = (title: string) => {
+    switch (title) {
+      case "Analyze Inspection Image":
+        fileInputRef.current?.click();
+        break;
+
+      default:
+        sendMessage(title);
+        break;
+    }
+  };
   const sendMessage = async (message?: string) => {
     const userMessage = message ?? input;
 
@@ -124,6 +139,42 @@ export default function AIAssistant() {
       ]);
     }
   };
+  const analyzeImage = async () => {
+    if (!selectedImage) return;
+
+    try {
+      setIsLoading(true);
+
+      const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("image", selectedImage);
+
+      const res = await fetch(
+        "https://infrastruc.onrender.com/api/ai/analyze-image",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      setImageAnalysis(data.analysis);
+    } catch (err) {
+      console.error(err);
+      setImageAnalysis("Failed to analyze image.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -168,10 +219,11 @@ export default function AIAssistant() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {quickActions.map((action) => (
-            <button
-              key={action.title}
-              className="rounded-xl border bg-card p-5 text-left transition-all hover:border-primary hover:shadow-md"
-            >
+           <button
+             key={action.title}
+             onClick={() => handleQuickAction(action.title)}
+             className="rounded-xl border bg-card p-5 text-left transition-all hover:border-primary hover:shadow-md"
+           >
               <action.icon className="mb-4 h-6 w-6 text-primary" />
 
               <h3 className="font-semibold">
@@ -266,7 +318,58 @@ export default function AIAssistant() {
               )}
               <div ref={messagesEndRef} />
               
-             
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+
+                  if (!file) return;
+
+                  setSelectedImage(file);
+                  setPreviewUrl(URL.createObjectURL(file));
+                }}
+              />
+
+              {previewUrl && (
+                <Card className="mb-6">
+                  <CardContent className="p-4 space-y-4">
+                    <h3 className="font-semibold">
+                      Selected Inspection Image
+                    </h3>
+
+                    <img
+                      src={previewUrl}
+                      alt="Inspection"
+                      className="max-h-80 rounded-lg border object-contain"
+                    />
+
+                    <Button
+                      onClick={analyzeImage}
+                      disabled={isLoading}
+                    >
+                      Analyze Image
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              {imageAnalysis && (
+                <Card className="mb-6">
+                  <CardContent className="p-6">
+                    <h3 className="mb-4 text-lg font-semibold">
+                      AI Inspection Analysis
+                    </h3>
+
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {imageAnalysis}
+                      </ReactMarkdown>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Chat Input */}
               <div className="flex gap-3">
