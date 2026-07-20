@@ -133,7 +133,9 @@ export default function Dashboard() {
     }
   };
   useEffect(() => {
+     console.log(location);
     if (location.includes("generateAI=true")) {
+      console.log("Auto generating...");
       generateInsights();
     }
   }, [location]);
