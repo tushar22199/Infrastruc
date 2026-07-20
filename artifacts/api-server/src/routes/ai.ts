@@ -70,18 +70,25 @@ Generate:
     });
   }
 });
-aiRouter.post(
-  "/chat",
-  requireAuth,
-  async (req, res) => {
+aiRouter.post("/chat", requireAuth, async (req, res) => {
   try {
     const { messages } = req.body;
-    let inspections;
 
     const latestMessage =
       messages[messages.length - 1]?.content ?? "";
 
     const question = latestMessage.toLowerCase();
+
+    const isReportRequest = [
+      "report",
+      "generate report",
+      "inspection report",
+      "maintenance report",
+      "summary report",
+      "assessment report",
+    ].some((keyword) => question.includes(keyword));
+
+    let inspections;
 
     if (question.includes("critical")) {
       inspections = await getCriticalInspections();
@@ -90,40 +97,119 @@ aiRouter.post(
     } else {
       inspections = await getLatestInspections();
     }
+
+    const inspectionContext = inspections
+      .map(
+        (inspection: any, index: number) => `
+Inspection ${index + 1}
+
+ID: ${inspection.id}
+Location: ${inspection.location}
+Status: ${inspection.status}
+Severity: ${inspection.severity}
+Inspector: ${inspection.inspector}
+Date: ${inspection.createdAt}
+Description: ${inspection.description}
+`
+      )
+      .join("\n----------------------------------------\n");
+
+    const reportInstruction = isReportRequest
+      ? `
+The user has requested a professional infrastructure inspection report.
+
+Return the response using EXACTLY this structure:
+
+# Infrastructure Inspection Report
+
+## Executive Summary
+
+## Inspection Overview
+
+## Key Findings
+
+## Risk Assessment
+
+## Recommended Repairs
+
+## Maintenance Priority
+
+## Preventive Maintenance
+
+## Conclusion
+
+Requirements:
+- Use Markdown.
+- Do not skip any section.
+- Base everything on the provided inspection data.
+- If data is missing, clearly mention assumptions.
+- Write as if submitting the report to a municipal authority or engineering manager.
+`
+      : "";
+
     const response = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
           content: `
-      You are Infrastructure Copilot, an AI assistant for civil and infrastructure engineers.
+You are Infrastructure Copilot, an expert civil and infrastructure engineering assistant.
 
-      You help with:
+You specialize in:
 
-      - Infrastructure inspections
-      - Defect analysis
-      - Maintenance planning
-      - Asset management
-      - Engineering standards
-      - Civil engineering questions
+- Infrastructure inspections
+- Structural engineering
+- Roads, bridges, buildings
+- Asset management
+- Risk assessment
+- Preventive maintenance
+- Engineering standards
 
-      Whenever inspection data is provided, use it to answer the user's questions accurately.
-      `,
+Rules:
+
+- Always answer in Markdown.
+- Use headings and bullet points.
+- Explain engineering reasoning.
+- Never invent inspection data.
+- If information is unavailable, clearly state assumptions.
+- Prioritize public safety.
+- Provide practical recommendations.
+- Use professional engineering language.
+
+When discussing inspections, include where appropriate:
+
+- Executive Summary
+- Key Findings
+- Risk Assessment
+- Recommended Actions
+- Maintenance Priority
+- Preventive Maintenance
+- Conclusion
+`,
         },
+
+        {
+          role: "system",
+          content: `
+Current inspection data:
+
+${inspectionContext}
+`,
+        },
+
+        ...(reportInstruction
+          ? [
+              {
+                role: "system" as const,
+                content: reportInstruction,
+              },
+            ]
+          : []),
 
         ...(messages as {
           role: "user" | "assistant";
           content: string;
         }[]),
-
-        {
-          role: "system",
-          content: `
-      Current inspection data:
-
-      ${JSON.stringify(inspections, null, 2)}
-      `,
-        },
       ],
     });
 
