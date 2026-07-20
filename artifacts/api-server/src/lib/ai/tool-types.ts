@@ -5,10 +5,12 @@ export interface ToolResult {
 
 export interface Tool {
   name: string;
-
   description: string;
 
-  execute(
-    question: string,
-  ): Promise<ToolResult>;
+  /**
+   * Returns true if this tool can answer the user's question.
+   */
+  canHandle(question: string): boolean;
+
+  execute(question: string): Promise<ToolResult>;
 }

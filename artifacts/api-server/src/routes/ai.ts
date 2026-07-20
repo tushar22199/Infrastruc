@@ -1,11 +1,11 @@
+import multer from "multer";
 import { requireAuth } from "../middlewares/authMiddleware";
 import {
   getLatestInspections,
   getCriticalInspections,
   getActiveInspections,
 } from "../lib/ai/tools/inspection-tool";
-import { db, inspectionsTable } from "@workspace/db";
-import { desc } from "drizzle-orm";
+
 import { Router } from "express";
 import OpenAI from "openai";
 
@@ -14,6 +14,9 @@ const aiRouter = Router();
 const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
   baseURL: "https://api.groq.com/openai/v1",
+});
+const upload = multer({
+  storage: multer.memoryStorage(),
 });
 
 aiRouter.post(
@@ -224,4 +227,55 @@ ${inspectionContext}
     });
   }
 });
+aiRouter.post(
+  "/analyze-image",
+  requireAuth,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({
+          success: false,
+          message: "No image uploaded.",
+        });
+        return;
+      }
+
+      const imageBase64 = req.file.buffer.toString("base64");
+      const imageUrl = `data:${req.file.mimetype};base64,${imageBase64}`;
+
+      const response = await client.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analyze this infrastructure inspection image.",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageUrl,
+                },
+              },
+            ],
+          },
+        ],
+      });
+      res.json({
+        success: true,
+        analysis: response.choices[0].message.content,
+      });
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        success: false,
+        message: "Image upload failed.",
+      });
+    }
+  }
+);
 export default aiRouter;
