@@ -11,7 +11,7 @@ import { Router } from "express";
 import OpenAI from "openai";
 
 const aiRouter = Router();
-
+aiRouter.use(requireAuth);
 const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
   baseURL: "https://api.groq.com/openai/v1",
@@ -22,18 +22,18 @@ const upload = multer({
 
 aiRouter.post(
   "/insights",
-  requireAuth,
-  async (req, res) => {
-  try {
-    const {
-      totalInspections,
-      activeIssues,
-      regionalHealth,
-      overdueInspections,
-      severityBreakdown,
-    } = req.body;
 
-    const prompt = `
+  async (req, res) => {
+    try {
+      const {
+        totalInspections,
+        activeIssues,
+        regionalHealth,
+        overdueInspections,
+        severityBreakdown,
+      } = req.body;
+
+      const prompt = `
 You are an infrastructure auditing expert.
 
 Dashboard Data:
@@ -51,35 +51,35 @@ Generate:
 - Recommendation
 `;
 
-    const response = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+      const response = await client.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
 
-    res.json({
-      success: true,
-      insight: response.choices[0].message.content,
-    });
-  } catch (err) {
-    console.error(err);
+      res.json({
+        success: true,
+        insight: response.choices[0].message.content,
+      });
+    } catch (err) {
+      console.error(err);
 
-    res.status(500).json({
-      success: false,
-      message: "Failed to generate AI insights",
-    });
-  }
-});
-aiRouter.post("/chat", requireAuth, async (req, res) => {
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate AI insights",
+      });
+    }
+  },
+);
+aiRouter.post("/chat", async (req, res) => {
   try {
     const { messages } = req.body;
 
-    const latestMessage =
-      messages[messages.length - 1]?.content ?? "";
+    const latestMessage = messages[messages.length - 1]?.content ?? "";
 
     const question = latestMessage.toLowerCase();
 
@@ -124,9 +124,9 @@ aiRouter.post("/chat", requireAuth, async (req, res) => {
     Status: ${inspection.status ?? "Unknown"}
 
     Location: ${
-          inspection.location ??
-          `${inspection.latitude ?? "N/A"}, ${inspection.longitude ?? "N/A"}`
-        }
+      inspection.location ??
+      `${inspection.latitude ?? "N/A"}, ${inspection.longitude ?? "N/A"}`
+    }
 
     Coordinates:
     Latitude: ${inspection.latitude ?? "N/A"}
@@ -142,7 +142,7 @@ aiRouter.post("/chat", requireAuth, async (req, res) => {
     ${inspection.description ?? "No description provided."}
 
     ----------------------------------------
-    `
+    `,
       )
       .join("\n");
 
@@ -307,7 +307,7 @@ ${inspectionContext}
 });
 aiRouter.post(
   "/analyze-image",
-  requireAuth,
+
   upload.single("image"),
   async (req, res) => {
     try {
@@ -354,7 +354,7 @@ aiRouter.post(
         message: "Image upload failed.",
       });
     }
-  }
+  },
 );
 aiRouter.get("/models", async (req, res) => {
   try {
