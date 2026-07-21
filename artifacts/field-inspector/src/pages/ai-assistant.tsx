@@ -78,6 +78,10 @@ export default function AIAssistant() {
         navigate("/?generateAI=true");
         break;
 
+        case "critical-issues":
+        navigate("/inspections?critical=true");
+        break;
+
       case "analyze-image":
         fileInputRef.current?.click();
         break;

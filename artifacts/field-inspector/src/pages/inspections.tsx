@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import {
   useListInspections,
   useBulkUpdateStatus,
@@ -58,6 +59,7 @@ export default function Inspections() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
 
   // Selection state
@@ -65,6 +67,15 @@ export default function Inspections() {
   const [bulkStatus, setBulkStatus] =
     useState<BulkStatusUpdateBodyStatus>("Active");
   const [bulkResult, setBulkResult] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("critical") === "true") {
+      setSeverityFilter("Critical");
+
+      window.history.replaceState({}, "", "/inspections");
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -87,11 +98,18 @@ export default function Inspections() {
         i.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.issueType.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" || i.status === statusFilter;
+      const matchesSeverity =
+        severityFilter === "all" || i.severity === severityFilter;
       const matchesView =
         viewMode === "all" ||
         (viewMode === "mine" && user && i.userId === user.id) ||
         (viewMode === "queue" && user && i.assignedTo === user.id);
-      return matchesSearch && matchesStatus && matchesView;
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesSeverity &&
+        matchesView
+      );
     })
     .sort(
       (a, b) =>
@@ -260,6 +278,8 @@ export default function Inspections() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
+
+            {/* Status */}
             <Select
               value={statusFilter}
               onValueChange={(v) => {
@@ -270,11 +290,32 @@ export default function Inspections() {
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Filter Status" />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="Under Review">Under Review</SelectItem>
                 <SelectItem value="Resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Severity */}
+            <Select
+              value={severityFilter}
+              onValueChange={(v) => {
+                setSeverityFilter(v);
+                clearSelection();
+              }}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Filter Severity" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="all">All Severities</SelectItem>
+                <SelectItem value="Critical">Critical</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
               </SelectContent>
             </Select>
           </div>
