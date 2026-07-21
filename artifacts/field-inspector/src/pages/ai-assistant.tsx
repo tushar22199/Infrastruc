@@ -155,7 +155,9 @@ export default function AIAssistant() {
       }
 
       const data = await res.json();
-
+      if (userMessage.toLowerCase().includes("report")) {
+        localStorage.setItem("latest-ai-report", data.reply);
+      }
       setMessages((prev) => [
         ...prev,
         {

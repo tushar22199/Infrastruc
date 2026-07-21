@@ -148,27 +148,12 @@ export default function Dashboard() {
     if (!summary || !inspections) return;
 
     try {
-      const response = await fetch("/api/ai/report", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          summary,
-          inspections,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate AI report");
-      }
-
-      const data = await response.json();
+      const latestReport = localStorage.getItem("latest-ai-report");
 
       exportAuditReport(
         summary,
         inspections,
-        data.report // We'll verify this field next
+        latestReport ?? undefined
       );
     } catch (error) {
       console.error(error);
