@@ -1,3 +1,5 @@
+import { validate } from "../middlewares/validate";
+import { InsightsSchema } from "@workspace/api-zod";
 import { aiLimiter } from "../middlewares/rateLimiter";
 import multer from "multer";
 import { requireAuth } from "../middlewares/authMiddleware";
@@ -25,7 +27,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5 MB
   },
 
-  fileFilter(req, file, cb) {
+  fileFilter(_req, file, cb) {
     if (!file.mimetype.startsWith("image/")) {
       return cb(new Error("Only image uploads are allowed."));
     }
@@ -36,7 +38,7 @@ const upload = multer({
 
 aiRouter.post(
   "/insights",
-
+  validate(InsightsSchema),
   async (req, res) => {
     try {
       const {
@@ -370,7 +372,7 @@ aiRouter.post(
     }
   },
 );
-aiRouter.get("/models", async (req, res) => {
+aiRouter.get("/models", async (_req, res) => {
   try {
     const models = await client.models.list();
     res.json(models);
