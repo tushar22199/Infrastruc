@@ -1,3 +1,4 @@
+import { aiLimiter } from "../middlewares/rateLimiter";
 import multer from "multer";
 import { requireAuth } from "../middlewares/authMiddleware";
 import {
@@ -12,6 +13,7 @@ import OpenAI from "openai";
 
 const aiRouter = Router();
 aiRouter.use(requireAuth);
+aiRouter.use(aiLimiter);
 const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
   baseURL: "https://api.groq.com/openai/v1",
