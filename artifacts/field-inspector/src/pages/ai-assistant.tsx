@@ -82,12 +82,32 @@ export default function AIAssistant() {
         navigate("/inspections?critical=true");
         break;
 
+         case "generate-report":
+              sendMessage(
+                `Generate a professional infrastructure inspection report.
+
+        Include:
+        - Executive Summary
+        - Inspection Overview
+        - Severity Analysis
+        - Critical Findings
+        - Risk Assessment
+        - Engineering Recommendations
+        - Maintenance Timeline
+        - Compliance Notes
+
+        Format the report professionally using markdown headings and bullet points.`
+              );
+              break;
+
       case "analyze-image":
         fileInputRef.current?.click();
         break;
 
       default:
-        sendMessage(actionId);
+        sendMessage(
+          "Generate a complete professional infrastructure inspection report."
+        );
         break;
     }
   };

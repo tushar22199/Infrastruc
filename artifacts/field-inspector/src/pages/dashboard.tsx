@@ -144,8 +144,36 @@ export default function Dashboard() {
       window.history.replaceState({}, "", "/");
     }
   }, [summary, severityBreakdown]);
-  const handleExport = () => {
-    if (summary && inspections) {
+  const handleExport = async () => {
+    if (!summary || !inspections) return;
+
+    try {
+      const response = await fetch("/api/ai/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          summary,
+          inspections,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate AI report");
+      }
+
+      const data = await response.json();
+
+      exportAuditReport(
+        summary,
+        inspections,
+        data.report // We'll verify this field next
+      );
+    } catch (error) {
+      console.error(error);
+
+      // Fallback if AI generation fails
       exportAuditReport(summary, inspections);
     }
   };

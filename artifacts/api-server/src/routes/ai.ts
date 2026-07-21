@@ -4,6 +4,7 @@ import {
   getLatestInspections,
   getCriticalInspections,
   getActiveInspections,
+  getAllInspections,
 } from "../lib/ai/tools/inspection-tool";
 
 import { Router } from "express";
@@ -89,64 +90,131 @@ aiRouter.post("/chat", requireAuth, async (req, res) => {
       "maintenance report",
       "summary report",
       "assessment report",
+      "audit",
+      "audit report",
+      "executive summary",
+      "assessment",
     ].some((keyword) => question.includes(keyword));
 
     let inspections;
 
-    if (question.includes("critical")) {
+    if (isReportRequest) {
+      inspections = await getAllInspections();
+    } else if (question.includes("critical")) {
       inspections = await getCriticalInspections();
     } else if (question.includes("active")) {
       inspections = await getActiveInspections();
     } else {
       inspections = await getLatestInspections();
     }
-
-    const inspectionContext = inspections
+    const reportInspections = inspections.slice(0, 100);
+    const inspectionContext = reportInspections
       .map(
         (inspection: any, index: number) => `
-Inspection ${index + 1}
+    ## Inspection ${index + 1}
 
-ID: ${inspection.id}
-Location: ${inspection.location}
-Status: ${inspection.status}
-Severity: ${inspection.severity}
-Inspector: ${inspection.inspector}
-Date: ${inspection.createdAt}
-Description: ${inspection.description}
-`
+    ID: ${inspection.id ?? "N/A"}
+
+    Title: ${inspection.title ?? "Untitled Inspection"}
+
+    Issue Type: ${inspection.issueType ?? "Unknown"}
+
+    Severity: ${inspection.severity ?? "Unknown"}
+
+    Status: ${inspection.status ?? "Unknown"}
+
+    Location: ${
+          inspection.location ??
+          `${inspection.latitude ?? "N/A"}, ${inspection.longitude ?? "N/A"}`
+        }
+
+    Coordinates:
+    Latitude: ${inspection.latitude ?? "N/A"}
+    Longitude: ${inspection.longitude ?? "N/A"}
+
+    Inspector:
+    ${inspection.inspector ?? "Unknown"}
+
+    Created:
+    ${inspection.createdAt ?? "Unknown"}
+
+    Description:
+    ${inspection.description ?? "No description provided."}
+
+    ----------------------------------------
+    `
       )
-      .join("\n----------------------------------------\n");
+      .join("\n");
 
     const reportInstruction = isReportRequest
       ? `
-The user has requested a professional infrastructure inspection report.
+The user requested a professional engineering inspection report.
 
-Return the response using EXACTLY this structure:
+Return a complete markdown report using EXACTLY the following structure.
 
 # Infrastructure Inspection Report
 
 ## Executive Summary
 
+Provide a concise executive overview.
+
 ## Inspection Overview
 
-## Key Findings
+Include:
+- Total inspections
+- Open issues
+- Closed issues
+- Severity distribution
+
+## Severity Analysis
+
+Discuss trends.
+
+## Critical Findings
+
+List major defects.
 
 ## Risk Assessment
 
-## Recommended Repairs
+Evaluate operational and structural risks.
 
-## Maintenance Priority
+## Engineering Recommendations
 
-## Preventive Maintenance
+Provide actionable repair recommendations.
+
+## Maintenance Timeline
+
+Separate into:
+- Immediate
+- Short Term
+- Long Term
+
+## Compliance Notes
+
+Mention applicable engineering practices.
 
 ## Conclusion
 
+Provide a final engineering assessment.
+
+## Executive Action Items
+
+List the five highest-priority actions.
+
+For each action include:
+
+- Priority
+- Issue
+- Recommended Action
+- Target Timeframe
+
 Requirements:
-- Use Markdown.
-- Do not skip any section.
-- Base everything on the provided inspection data.
-- If data is missing, clearly mention assumptions.
-- Write as if submitting the report to a municipal authority or engineering manager.
+
+- Professional engineering language.
+- Markdown headings.
+- Bullet points where appropriate.
+- Never invent inspection data.
+- Mention assumptions if necessary.
 `
       : "";
 
@@ -178,6 +246,16 @@ Rules:
 - Prioritize public safety.
 - Provide practical recommendations.
 - Use professional engineering language.
+When preparing inspection reports:
+
+- Prioritize human safety.
+- Rank findings by engineering risk.
+- Reference evidence from the inspection data.
+- Avoid repeating the same issue.
+- Write concise executive summaries.
+- Recommend practical engineering actions.
+- If multiple critical defects exist, prioritize them.
+- Think like a senior civil engineering consultant preparing a report for management.
 
 When discussing inspections, include where appropriate:
 
@@ -195,7 +273,7 @@ When discussing inspections, include where appropriate:
           role: "system",
           content: `
 Current inspection data:
-
+Total inspections supplied: ${reportInspections.length}
 ${inspectionContext}
 `,
         },

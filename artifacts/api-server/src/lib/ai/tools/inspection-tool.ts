@@ -39,7 +39,8 @@ const inspectionAgent: Tool = {
       q.includes("inspection") ||
       q.includes("critical") ||
       q.includes("active") ||
-      q.includes("latest")
+      q.includes("latest") ||
+      q.includes("report")
     );
   },
 
@@ -59,12 +60,25 @@ const inspectionAgent: Tool = {
         data: await getActiveInspections(),
       };
     }
+    if (q.includes("report")) {
+      return {
+        tool: "inspection",
+        data: await getAllInspections(),
+      };
+    }
 
     return {
       tool: "inspection",
       data: await getLatestInspections(),
     };
+    
   },
 };
+export async function getAllInspections() {
+  return db
+    .select()
+    .from(inspectionsTable)
+    .orderBy(desc(inspectionsTable.createdAt));
+}
 
 export default inspectionAgent;

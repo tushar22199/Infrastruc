@@ -22,7 +22,11 @@ function healthLabel(score: number): string {
   return "CRITICAL";
 }
 
-export function exportAuditReport(summary: DashboardSummary, inspections: Inspection[]) {
+export function exportAuditReport(
+    summary: DashboardSummary,
+    inspections: Inspection[],
+    aiReport?: string
+){
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -209,6 +213,85 @@ export function exportAuditReport(summary: DashboardSummary, inspections: Inspec
   if (typeof (doc as any).putTotalPages === "function") {
     (doc as any).putTotalPages(totalPagesPlaceholder);
   }
+  if (aiReport) {
+      doc.addPage();
 
+    let y = 20;
+
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(...NAVY);
+    doc.text("AI Engineering Assessment", marginX, y);
+
+    y += 12;
+
+    // Split report into paragraphs
+    const paragraphs = aiReport
+      .split("\n")
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    paragraphs.forEach((paragraph) => {
+      // Headings (Markdown ##)
+      if (paragraph.startsWith("##")) {
+        y += 4;
+
+        doc.setFillColor(...NAVY);
+        doc.roundedRect(marginX, y - 6, usableWidth, 9, 1, 1, "F");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.setTextColor(...WHITE);
+
+        doc.text(
+          paragraph.replace(/^##\s*/, ""),
+          marginX + 3,
+          y
+        );
+
+        y += 10;
+        return;
+      }
+
+      // Bullet points
+      if (paragraph.startsWith("-")) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(40, 40, 40);
+
+        const bullet = "• " + paragraph.replace(/^- /, "");
+
+        const lines = doc.splitTextToSize(
+          bullet,
+          usableWidth - 5
+        );
+
+        doc.text(lines, marginX + 4, y);
+
+        y += lines.length * 6 + 2;
+      } else {
+        // Normal paragraph
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(40, 40, 40);
+
+        const lines = doc.splitTextToSize(
+          paragraph,
+          usableWidth
+        );
+
+        doc.text(lines, marginX, y);
+
+        y += lines.length * 6 + 4;
+      }
+
+      // New page if needed
+      if (y > pageHeight - 25) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+  }
   doc.save(`audit-report-${format(now, "yyyy-MM-dd")}.pdf`);
 }
