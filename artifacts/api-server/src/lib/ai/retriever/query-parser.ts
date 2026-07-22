@@ -1,5 +1,6 @@
+import { issueTypeSynonyms } from "./synonyms";
 import {
-  issueTypeEnum,
+ 
   statusEnum,
 } from "@workspace/db";
 
@@ -17,12 +18,15 @@ export function parseQuery(question: string): QueryFilters {
   const filters: QueryFilters = {};
 
   // Issue Type
-  const issueType = issueTypeEnum.find((type) =>
-    q.includes(type.toLowerCase())
-  );
-
-  if (issueType) {
-    filters.issueType = issueType;
+  for (const [issueType, synonyms] of Object.entries(issueTypeSynonyms)) {
+    if (
+      synonyms.some((term) =>
+        q.includes(term.toLowerCase())
+      )
+    ) {
+      filters.issueType = issueType;
+      break;
+    }
   }
 
   // Status
