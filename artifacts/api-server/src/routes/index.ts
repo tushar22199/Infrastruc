@@ -1,3 +1,4 @@
+import documentsRouter from "./documents";
 import aiRouter from "./ai";
 import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/authMiddleware";
@@ -19,6 +20,7 @@ router.use(authRouter);
 
 //router.use(requireAuth);
 router.use("/ai", aiRouter);
+router.use("/documents", documentsRouter);
 router.use(inspectionsRouter);
 router.use(dashboardRouter);
 router.use(notificationsRouter);
