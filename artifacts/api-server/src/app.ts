@@ -62,7 +62,11 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(authMiddleware);
 
 app.use("/api", router);
-
+app.get("/health", (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+  });
+});
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
