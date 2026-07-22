@@ -39,13 +39,17 @@ app.use(
   cors({
     credentials: true,
     origin(origin, callback) {
+      console.log("Incoming origin:", origin);
+      console.log("Allowed origins:", allowedOrigins);
+
       if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+        return callback(null, true);
       }
+
+      console.log("Blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
     },
-  }),
+  })
 );
 app.use(
   helmet({
