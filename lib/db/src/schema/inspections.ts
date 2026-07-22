@@ -12,8 +12,6 @@ export const issueTypeEnum = [
   "Utility Failure",
   "Other",
 ] as const;
-
-export const severityEnum = ["Critical", "Medium", "Low"] as const;
 export const statusEnum = ["Active", "Resolved", "Under Review"] as const;
 
 export const inspectionsTable = pgTable("inspections", {

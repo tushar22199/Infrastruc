@@ -1,3 +1,4 @@
+import { retrieveRelevantInspections } from "../lib/ai/retriever/inspection-retriever";
 import { validate } from "../middlewares/validate";
 import { InsightsSchema } from "@workspace/api-zod";
 import { aiLimiter } from "../middlewares/rateLimiter";
@@ -112,17 +113,7 @@ aiRouter.post("/chat", async (req, res) => {
       "assessment",
     ].some((keyword) => question.includes(keyword));
 
-    let inspections;
-
-    if (isReportRequest) {
-      inspections = await getAllInspections();
-    } else if (question.includes("critical")) {
-      inspections = await getCriticalInspections();
-    } else if (question.includes("active")) {
-      inspections = await getActiveInspections();
-    } else {
-      inspections = await getLatestInspections();
-    }
+    const inspections = await retrieveRelevantInspections(question);
     const reportInspections = inspections.slice(0, 100);
     const inspectionContext = reportInspections
       .map(
