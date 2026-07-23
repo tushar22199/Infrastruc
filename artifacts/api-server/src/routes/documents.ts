@@ -1,10 +1,14 @@
+import {
+  createDocument,
+  createDocumentChunks,
+  listDocuments,
+} from "../lib/knowledge/repository";
 import { extractPdfText } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
-import { createDocument } from "../lib/knowledge/repository";
+
 import { Router } from "express";
 import { requireAuth } from "../middlewares/authMiddleware";
-import { listDocuments } from "../lib/knowledge/repository";
 
 const documentsRouter = Router();
 
@@ -44,7 +48,9 @@ documentsRouter.post(
       const text = await extractPdfText(req.file.path);
 
       const chunks = await chunkText(text);
+      await createDocumentChunks(document.id, chunks);
 
+      console.log("Saved chunks:", chunks.length);
       console.log("Extracted characters:", text.length);
       console.log("Chunks created:", chunks.length);
       console.log("First chunk:");
@@ -54,7 +60,7 @@ documentsRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 export default documentsRouter;
