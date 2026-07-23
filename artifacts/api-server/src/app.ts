@@ -45,7 +45,12 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
+      if (
+        origin.endsWith(".replit.dev") ||
+        origin.endsWith(".sisko.replit.dev")
+      ) {
+        return callback(null, true);
+      }
       console.log("Blocked origin:", origin);
       return callback(new Error("Not allowed by CORS"));
     },

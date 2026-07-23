@@ -1,4 +1,5 @@
 import { extractPdfText } from "../lib/knowledge/extractor";
+import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
 import { createDocument } from "../lib/knowledge/repository";
 import { Router } from "express";
@@ -42,8 +43,13 @@ documentsRouter.post(
       });
       const text = await extractPdfText(req.file.path);
 
+      const chunks = await chunkText(text);
+
       console.log("Extracted characters:", text.length);
-      console.log(text.substring(0, 500));
+      console.log("Chunks created:", chunks.length);
+      console.log("First chunk:");
+      console.log(chunks[0]);
+
       res.status(201).json(document);
     } catch (err) {
       next(err);
