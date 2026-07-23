@@ -1,3 +1,4 @@
+import { extractPdfText } from "../lib/knowledge/extractor";
 import { upload } from "../lib/knowledge/upload";
 import { createDocument } from "../lib/knowledge/repository";
 import { Router } from "express";
@@ -39,7 +40,10 @@ documentsRouter.post(
         fileSize: req.file.size,
         storagePath: req.file.path,
       });
+      const text = await extractPdfText(req.file.path);
 
+      console.log("Extracted characters:", text.length);
+      console.log(text.substring(0, 500));
       res.status(201).json(document);
     } catch (err) {
       next(err);
