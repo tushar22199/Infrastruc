@@ -8,12 +8,12 @@ import { eq } from "drizzle-orm";
 export async function createDocument(
   document: typeof documentsTable.$inferInsert
 ) {
-  const [createdDocument] = await db
+  const [created] = await db
     .insert(documentsTable)
     .values(document)
     .returning();
 
-  return createdDocument;
+  return created;
 }
 export async function listDocuments() {
   return db
