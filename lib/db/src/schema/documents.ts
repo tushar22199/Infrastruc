@@ -1,6 +1,7 @@
 import {
   pgTable,
   pgEnum,
+  vector,
   uuid,
   varchar,
   integer,
@@ -63,6 +64,9 @@ export const documentChunksTable = pgTable(
     pageNumber: integer("page_number"),
 
     content: text("content").notNull(),
+    embedding: vector("embedding", {
+      dimensions: 1536,
+    }),
     createdAt: timestamp("created_at")
       .defaultNow()
       .notNull(),

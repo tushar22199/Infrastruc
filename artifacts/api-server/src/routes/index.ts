@@ -1,3 +1,4 @@
+import testRouter from "./test";
 import documentsRouter from "./documents";
 import aiRouter from "./ai";
 import { Router, type IRouter } from "express";
@@ -17,7 +18,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
-
+router.use("/test", testRouter);
 //router.use(requireAuth);
 router.use("/ai", aiRouter);
 router.use("/documents", documentsRouter);
