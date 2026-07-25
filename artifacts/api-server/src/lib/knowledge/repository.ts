@@ -1,3 +1,4 @@
+import { inArray } from "drizzle-orm";
 import {
   db,
   documentsTable,
@@ -34,4 +35,22 @@ export async function createDocumentChunks(
       pageNumber: null,
     })),
   );
+}
+export async function getDocumentChunks(documentId: string) {
+  return db
+    .select()
+    .from(documentChunksTable)
+    .where(eq(documentChunksTable.documentId, documentId))
+    .orderBy(documentChunksTable.chunkIndex);
+}
+export async function updateChunkEmbedding(
+  chunkId: string,
+  embedding: number[],
+) {
+  await db
+    .update(documentChunksTable)
+    .set({
+      embedding,
+    })
+    .where(eq(documentChunksTable.id, chunkId));
 }

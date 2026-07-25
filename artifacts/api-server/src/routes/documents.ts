@@ -1,3 +1,4 @@
+import { embedDocument } from "../lib/knowledge/embedder";
 import {
   createDocument,
   createDocumentChunks,
@@ -49,6 +50,7 @@ documentsRouter.post(
 
       const chunks = await chunkText(text);
       await createDocumentChunks(document.id, chunks);
+      await embedDocument(document.id);
 
       console.log("Saved chunks:", chunks.length);
       console.log("Extracted characters:", text.length);
