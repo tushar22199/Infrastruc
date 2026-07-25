@@ -116,7 +116,13 @@ aiRouter.post("/chat", async (req, res) => {
 
     const inspections = await retrieveRelevantInspections(question);
     const documentChunks = await retrieveContext(question);
+    console.log("=== Retrieved Chunks ===");
 
+    documentChunks.forEach((chunk: any, index: number) => {
+      console.log(`Chunk ${index + 1}`);
+      console.log(chunk.content);
+      console.log("--------------------");
+    });
     const documentContext = documentChunks
       .map(
         (chunk: any, index: number) => `
