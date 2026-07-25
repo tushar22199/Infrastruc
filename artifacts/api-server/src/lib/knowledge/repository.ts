@@ -1,11 +1,11 @@
-import { inArray } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   db,
   documentsTable,
   documentChunksTable,
 } from "@workspace/db";
 
-import { eq } from "drizzle-orm";
+
 export async function createDocument(
   document: typeof documentsTable.$inferInsert
 ) {
@@ -53,4 +53,26 @@ export async function updateChunkEmbedding(
       embedding,
     })
     .where(eq(documentChunksTable.id, chunkId));
+}
+export async function searchSimilarChunks(
+  queryEmbedding: number[],
+  limit = 5
+) {
+  const embedding = `[${queryEmbedding.join(",")}]`;
+
+  const result = await db.execute(sql`
+    SELECT
+      id,
+      document_id,
+      chunk_index,
+      content,
+      page_number,
+      embedding <=> ${embedding}::vector AS distance
+    FROM document_chunks
+    WHERE embedding IS NOT NULL
+    ORDER BY embedding <=> ${embedding}::vector
+    LIMIT ${limit};
+  `);
+
+  return result.rows;
 }

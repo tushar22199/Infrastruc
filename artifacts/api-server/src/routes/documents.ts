@@ -1,3 +1,4 @@
+import { retrieveContext } from "../lib/knowledge/retriever";
 import { embedDocument } from "../lib/knowledge/embedder";
 import {
   createDocument,
@@ -69,5 +70,28 @@ documentsRouter.post(
           }
         },
       );
+documentsRouter.post(
+  "/search",
+  async (req, res, next): Promise<void> => {
+    try {
+      const { question } = req.body;
 
+      if (!question) {
+        res.status(400).json({
+          message: "Question is required",
+        });
+        return;
+      }
+
+      const chunks = await retrieveContext(question);
+
+      res.json({
+        question,
+        results: chunks,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
       export default documentsRouter;
