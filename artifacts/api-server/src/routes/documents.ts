@@ -49,8 +49,13 @@ documentsRouter.post(
       const text = await extractPdfText(req.file.path);
 
       const chunks = await chunkText(text);
+
       await createDocumentChunks(document.id, chunks);
-      await embedDocument(document.id);
+
+      // Run embedding in the background
+      void embedDocument(document.id).catch((err) => {
+        console.error("Embedding failed:", err);
+      });
 
       console.log("Saved chunks:", chunks.length);
       console.log("Extracted characters:", text.length);
@@ -59,10 +64,5 @@ documentsRouter.post(
       console.log(chunks[0]);
 
       res.status(201).json(document);
-    } catch (err) {
-      next(err);
-    }
-  },
-);
 
 export default documentsRouter;
