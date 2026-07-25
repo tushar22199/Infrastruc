@@ -43,8 +43,9 @@ export async function authMiddleware(
     req.user = verifyToken(token);
   } 
   catch (err) {
-      req.log.warn({ err }, "Invalid JWT");
-      req.user = undefined;
+    console.error("JWT verification failed:", err);
+    req.log.warn({ err }, "Invalid JWT");
+    req.user = undefined;
   }
 
   next();
