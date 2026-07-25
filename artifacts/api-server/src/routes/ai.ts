@@ -1,3 +1,4 @@
+import { retrieveContext } from "../lib/knowledge/retriever";
 import { retrieveRelevantInspections } from "../lib/ai/retriever/inspection-retriever";
 import { validate } from "../middlewares/validate";
 import { InsightsSchema } from "@workspace/api-zod";
@@ -114,7 +115,22 @@ aiRouter.post("/chat", async (req, res) => {
     ].some((keyword) => question.includes(keyword));
 
     const inspections = await retrieveRelevantInspections(question);
-    const reportInspections = inspections.slice(0, 100);
+    const documentChunks = await retrieveContext(question);
+
+    const documentContext = documentChunks
+      .map(
+        (chunk: any, index: number) => `
+    ## Document Chunk ${index + 1}
+
+    ${chunk.content}
+
+    ----------------------------------------
+    `
+      )
+      .join("\n");
+    const reportInspections = isReportRequest
+    ? inspections.slice(0, 100)
+    : inspections.slice(0, 10);
     const inspectionContext = reportInspections
       .map(
         (inspection: any, index: number) => `
@@ -283,6 +299,20 @@ Current inspection data:
 Total inspections supplied: ${reportInspections.length}
 ${inspectionContext}
 `,
+        },
+        {
+          role: "system",
+          content: `
+        Relevant engineering documents:
+
+        ${documentContext}
+
+        Use this document context whenever it is relevant to answer the user's question.
+
+        If the inspection data and document context are both useful, combine them.
+
+        Never invent information that is not present.
+        `,
         },
 
         ...(reportInstruction
