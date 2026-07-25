@@ -61,8 +61,13 @@ documentsRouter.post(
       console.log("Extracted characters:", text.length);
       console.log("Chunks created:", chunks.length);
       console.log("First chunk:");
-      console.log(chunks[0]);
+            console.log(chunks[0]);
 
-      res.status(201).json(document);
+            res.status(201).json(document);
+          } catch (err) {
+            next(err);
+          }
+        },
+      );
 
-export default documentsRouter;
+      export default documentsRouter;
