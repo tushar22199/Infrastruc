@@ -119,8 +119,16 @@ aiRouter.post("/chat", async (req, res) => {
     console.log("=== Retrieved Chunks ===");
 
     documentChunks.forEach((chunk: any, index: number) => {
-      console.log(`Chunk ${index + 1}`);
-      console.log(chunk.content);
+      console.log({
+        rank: index + 1,
+        id: chunk.id,
+        documentId: chunk.document_id,
+        chunkIndex: chunk.chunk_index,
+        page: chunk.page_number,
+        distance: chunk.distance,
+      });
+
+      console.log(chunk.content.substring(0, 300));
       console.log("--------------------");
     });
     const documentContext = documentChunks
