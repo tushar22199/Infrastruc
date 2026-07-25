@@ -23,11 +23,15 @@ export function requireAuth(
   next();
 }
 
+
 export async function authMiddleware(
   req: Request,
   _res: Response,
   next: NextFunction,
 ) {
+  console.log("=== AUTH MIDDLEWARE ===");
+  console.log("Authorization:", req.headers.authorization);
+
   req.isAuthenticated = function () {
     return this.user !== undefined;
   };
@@ -35,16 +39,16 @@ export async function authMiddleware(
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
+    console.log("No Bearer token");
     return next();
   }
 
   try {
     const token = authHeader.substring(7).trim();
     req.user = verifyToken(token);
-  } 
-  catch (err) {
-    console.error("JWT verification failed:", err);
-    req.log.warn({ err }, "Invalid JWT");
+    console.log("Authenticated:", req.user.email);
+  } catch (err) {
+    console.error("JWT Error:", err);
     req.user = undefined;
   }
 
