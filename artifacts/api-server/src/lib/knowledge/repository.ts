@@ -77,6 +77,25 @@ export async function searchSimilarChunks(
 
   return result.rows;
 }
+export async function searchKeywordChunks(
+  keywords: string[],
+  limit = 10
+) {
+  if (keywords.length === 0) return [];
+
+  const conditions = keywords.map(
+    (word) => sql`content ILIKE ${"%" + word + "%"}`
+  );
+
+  const result = await db.execute(sql`
+    SELECT *
+    FROM document_chunks
+    WHERE ${sql.join(conditions, sql` OR `)}
+    LIMIT ${limit};
+  `);
+
+  return result.rows;
+}
 export async function getNeighborChunks(
   documentId: string,
   chunkIndex: number,
