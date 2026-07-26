@@ -59,32 +59,62 @@ export function extractSearchTerms(question: string) {
   ];
 
   // Generate phrases from RAW words
-  const phrases = new Set<string>();
+  const rawPhrases = new Set<string>();
 
+  // 2-word phrases
   for (let i = 0; i < rawWords.length - 1; i++) {
-    const phrase = `${rawWords[i]} ${rawWords[i + 1]}`;
-
-    if (
-      phrase.split(" ").some((w) => !STOP_WORDS.has(w))
-    ) {
-      phrases.add(phrase);
-    }
+    rawPhrases.add(`${rawWords[i]} ${rawWords[i + 1]}`);
   }
 
+  // 3-word phrases
   for (let i = 0; i < rawWords.length - 2; i++) {
-    const phrase =
-      `${rawWords[i]} ${rawWords[i + 1]} ${rawWords[i + 2]}`;
-
-    if (
-      phrase.split(" ").some((w) => !STOP_WORDS.has(w))
-    ) {
-      phrases.add(phrase);
-    }
+    rawPhrases.add(
+      `${rawWords[i]} ${rawWords[i + 1]} ${rawWords[i + 2]}`
+    );
   }
+
+  const PHRASE_STOP_WORDS = new Set([
+    "what",
+    "which",
+    "where",
+    "when",
+    "why",
+    "how",
+    "the",
+    "is",
+    "are",
+    "was",
+    "were",
+    "to",
+    "according",
+  ]);
+
+  const phrases = [...rawPhrases].filter((phrase) => {
+    const words = phrase.split(" ");
+
+    // Reject phrases that start with a stop word
+    if (PHRASE_STOP_WORDS.has(words[0])) {
+      return false;
+    }
+
+    // Reject phrases made only of numbers
+    if (words.every((w) => /^\d+$/.test(w))) {
+      return false;
+    }
+
+    // Keep phrases with at least two non-stop-word terms
+    const meaningfulWords = words.filter(
+      (w) =>
+        !PHRASE_STOP_WORDS.has(w) &&
+        !/^\d+$/.test(w)
+    );
+
+    return meaningfulWords.length >= 2;
+  });
 
   return {
     keywords,
-    phrases: [...phrases],
+    phrases,
   };
 }
 export async function retrieveContext(question: string) {
