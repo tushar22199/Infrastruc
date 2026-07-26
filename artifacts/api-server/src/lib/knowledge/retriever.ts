@@ -42,10 +42,10 @@ export async function retrieveContext(question: string) {
 
   const keywords = extractKeywords(question);
 
-  const semanticChunks = await searchSimilarChunks(embedding, 10);
+  const semanticChunks = await searchSimilarChunks(embedding, 5);
 
   const keywordResult = await searchKeywordChunks(keywords, 10);
-  const keywordChunks = await searchKeywordChunks(keywords, 10);
+  const keywordChunks = await searchKeywordChunks(keywords, 5);
   console.log("===== Keywords =====");
   console.log(keywords);
 
@@ -80,12 +80,13 @@ export async function retrieveContext(question: string) {
     seen.add(key);
     return true;
   });
+  const topChunks = uniqueChunks.slice(0, 5);
   const expandedChunks: any[] = [];
-  for (const chunk of uniqueChunks) {
+  for (const chunk of topChunks) {
     const neighbors = await getNeighborChunks(
       chunk.document_id as string,
       chunk.chunk_index as number,
-      2
+      1
     );
 
     expandedChunks.push(...neighbors);
