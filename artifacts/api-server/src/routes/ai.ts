@@ -316,15 +316,22 @@ ${inspectionContext}
         {
           role: "system",
           content: `
-        Relevant engineering documents:
+        You have access to engineering standards and technical reference documents.
+
+        These documents are authoritative sources.
+
+        Guidelines:
+
+        - Use the engineering documents as the primary source for technical standards, design requirements, material specifications, and code provisions.
+        - Use inspection data as evidence of field conditions.
+        - When both inspection data and engineering documents are relevant, combine them naturally.
+        - If the engineering documents do not contain the requested information, explicitly state that instead of guessing.
+        - Never fabricate engineering standards or code requirements.
+        - Prefer information directly supported by the retrieved document context.
+
+        Engineering Document Context:
 
         ${documentContext}
-
-        Use this document context whenever it is relevant to answer the user's question.
-
-        If the inspection data and document context are both useful, combine them.
-
-        Never invent information that is not present.
         `,
         },
 
