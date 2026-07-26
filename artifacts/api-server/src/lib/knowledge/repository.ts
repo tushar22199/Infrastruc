@@ -79,21 +79,48 @@ export async function searchSimilarChunks(
 }
 export async function searchKeywordChunks(
   keywords: string[],
+  phrases: string[],
   limit = 10
 ) {
-  if (keywords.length === 0) return [];
+  if (keywords.length === 0 && phrases.length === 0) {
+    return [];
+  }
 
-  const score = sql.join(
-    keywords.map(
-      (word) => sql`CASE WHEN content ILIKE ${"%" + word + "%"} THEN 1 ELSE 0 END`
-    ),
-    sql` + `
-  );
+  // Phrase scoring (high weight)
+  const phraseScore =
+    phrases.length > 0
+      ? sql.join(
+          phrases.map(
+            (phrase) =>
+              sql`CASE WHEN content ILIKE ${"%" + phrase + "%"} THEN 100 ELSE 0 END`
+          ),
+          sql` + `
+        )
+      : sql`0`;
+
+  // Keyword scoring (low weight)
+  const keywordScore =
+    keywords.length > 0
+      ? sql.join(
+          keywords.map(
+            (word) =>
+              sql`CASE WHEN content ILIKE ${"%" + word + "%"} THEN 1 ELSE 0 END`
+          ),
+          sql` + `
+        )
+      : sql`0`;
+
+  const score = sql`${phraseScore} + ${keywordScore}`;
 
   const conditions = sql.join(
-    keywords.map(
-      (word) => sql`content ILIKE ${"%" + word + "%"}`
-    ),
+    [
+      ...phrases.map(
+        (phrase) => sql`content ILIKE ${"%" + phrase + "%"}`
+      ),
+      ...keywords.map(
+        (word) => sql`content ILIKE ${"%" + word + "%"}`
+      ),
+    ],
     sql` OR `
   );
 
@@ -102,7 +129,7 @@ export async function searchKeywordChunks(
            (${score}) AS keyword_score
     FROM document_chunks
     WHERE ${conditions}
-    ORDER BY keyword_score DESC
+    ORDER BY keyword_score DESC, chunk_index
     LIMIT ${limit};
   `);
 

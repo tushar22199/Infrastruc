@@ -5,51 +5,93 @@ import {
   getNeighborChunks,
 } from "./repository";
 
-function extractKeywords(question: string) {
-  return question
+const STOP_WORDS = new Set([
+  "what",
+  "which",
+  "where",
+  "when",
+  "according",
+  "about",
+  "their",
+  "there",
+  "with",
+  "from",
+  "have",
+  "does",
+  "into",
+  "this",
+  "that",
+  "shall",
+  "would",
+  "could",
+  "should",
+  "the",
+  "and",
+  "for",
+  "are",
+  "was",
+  "were",
+  "who",
+  "why",
+  "how",
+  "is",
+  "of",
+  "to",
+  "in",
+  "on",
+  "at",
+  "by",
+]);
+
+export function extractSearchTerms(question: string) {
+  const words = question
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
     .filter(
       (word) =>
         word.length > 2 &&
-        ![
-          "what",
-          "which",
-          "where",
-          "when",
-          "according",
-          "about",
-          "their",
-          "there",
-          "with",
-          "from",
-          "have",
-          "does",
-          "into",
-          "this",
-          "that",
-          "shall",
-          "would",
-          "could",
-          "should",
-        ].includes(word)
+        !STOP_WORDS.has(word)
     );
-}
 
+  const keywords = [...new Set(words)];
+
+  const phrases = new Set<string>();
+
+  // 2-word phrases
+  for (let i = 0; i < words.length - 1; i++) {
+    phrases.add(`${words[i]} ${words[i + 1]}`);
+  }
+
+  // 3-word phrases
+  for (let i = 0; i < words.length - 2; i++) {
+    phrases.add(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
+  }
+
+  return {
+    keywords,
+    phrases: [...phrases],
+  };
+}
 export async function retrieveContext(question: string) {
   const embedding = await generateEmbedding(question);
 
-  const keywords = extractKeywords(question);
+  const { keywords, phrases } = extractSearchTerms(question);
 
   const semanticChunks = await searchSimilarChunks(embedding, 5);
 
-  const keywordResult = await searchKeywordChunks(keywords, 10);
-  const keywordChunks = await searchKeywordChunks(keywords, 5);
+  
+  const keywordChunks = await searchKeywordChunks(
+      keywords,
+      phrases,
+      5
+  );
   console.log("===== Keywords =====");
   console.log(keywords);
-
+  console.log("===== Phrases =====");
+  console.log(phrases);
   console.log("===== Semantic Results =====");
+  
   console.log(
     semanticChunks.map((chunk: any) => ({
       chunkIndex: chunk.chunk_index,
