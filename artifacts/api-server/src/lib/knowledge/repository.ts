@@ -1,4 +1,5 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   db,
   documentsTable,
@@ -75,4 +76,21 @@ export async function searchSimilarChunks(
   `);
 
   return result.rows;
+}
+export async function getNeighborChunks(
+  documentId: string,
+  chunkIndex: number,
+  window = 2
+) {
+  return await db
+    .select()
+    .from(documentChunksTable)
+    .where(
+      and(
+        eq(documentChunksTable.documentId, documentId),
+        gte(documentChunksTable.chunkIndex, chunkIndex - window),
+        lte(documentChunksTable.chunkIndex, chunkIndex + window)
+      )
+    )
+    .orderBy(documentChunksTable.chunkIndex);
 }

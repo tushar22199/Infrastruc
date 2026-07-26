@@ -1,5 +1,8 @@
 import { generateEmbedding } from "./embeddings";
-import { searchSimilarChunks } from "./repository";
+import {
+  searchSimilarChunks,
+  getNeighborChunks,
+} from "./repository";
 
 export async function retrieveContext(question: string) {
   const embedding = await generateEmbedding(question);
@@ -18,6 +21,23 @@ export async function retrieveContext(question: string) {
     seen.add(key);
     return true;
   });
+  const expandedChunks: any[] = [];
+  for (const chunk of uniqueChunks) {
+    const neighbors = await getNeighborChunks(
+      chunk.document_id as string,
+      chunk.chunk_index as number,
+      2
+    );
 
-  return uniqueChunks.slice(0, 5);
+    expandedChunks.push(...neighbors);
+  }
+  const uniqueExpanded = Array.from(
+    new Map(
+      expandedChunks.map((chunk: any) => [chunk.id, chunk])
+    ).values()
+  );
+  uniqueExpanded.sort(
+    (a: any, b: any) => a.chunkIndex - b.chunkIndex
+  );
+  return uniqueExpanded;
 }
