@@ -35,7 +35,6 @@ const STOP_WORDS = new Set([
   "why",
   "how",
   "is",
-  "of",
   "to",
   "in",
   "on",
@@ -44,28 +43,43 @@ const STOP_WORDS = new Set([
 ]);
 
 export function extractSearchTerms(question: string) {
-  const words = question
+  const rawWords = question
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
-    .filter(
-      (word) =>
-        word.length > 2 &&
-        !STOP_WORDS.has(word)
-    );
+    .filter(Boolean);
 
-  const keywords = [...new Set(words)];
+  // Keywords (remove stop words)
+  const keywords = [
+    ...new Set(
+      rawWords.filter(
+        (word) => word.length > 2 && !STOP_WORDS.has(word)
+      )
+    ),
+  ];
 
+  // Generate phrases from RAW words
   const phrases = new Set<string>();
 
-  // 2-word phrases
-  for (let i = 0; i < words.length - 1; i++) {
-    phrases.add(`${words[i]} ${words[i + 1]}`);
+  for (let i = 0; i < rawWords.length - 1; i++) {
+    const phrase = `${rawWords[i]} ${rawWords[i + 1]}`;
+
+    if (
+      phrase.split(" ").some((w) => !STOP_WORDS.has(w))
+    ) {
+      phrases.add(phrase);
+    }
   }
 
-  // 3-word phrases
-  for (let i = 0; i < words.length - 2; i++) {
-    phrases.add(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
+  for (let i = 0; i < rawWords.length - 2; i++) {
+    const phrase =
+      `${rawWords[i]} ${rawWords[i + 1]} ${rawWords[i + 2]}`;
+
+    if (
+      phrase.split(" ").some((w) => !STOP_WORDS.has(w))
+    ) {
+      phrases.add(phrase);
+    }
   }
 
   return {
