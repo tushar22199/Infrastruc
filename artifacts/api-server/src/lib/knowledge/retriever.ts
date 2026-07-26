@@ -71,7 +71,9 @@ export async function retrieveContext(question: string) {
   const seen = new Set<string>();
 
   const uniqueChunks = mergedChunks.filter((chunk: any) => {
-    const key = chunk.id;
+    const key = chunk.content
+      .replace(/\s+/g, " ")
+      .trim();
 
     if (seen.has(key)) {
       return false;

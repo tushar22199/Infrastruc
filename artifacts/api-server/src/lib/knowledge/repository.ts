@@ -83,14 +83,26 @@ export async function searchKeywordChunks(
 ) {
   if (keywords.length === 0) return [];
 
-  const conditions = keywords.map(
-    (word) => sql`content ILIKE ${"%" + word + "%"}`
+  const score = sql.join(
+    keywords.map(
+      (word) => sql`CASE WHEN content ILIKE ${"%" + word + "%"} THEN 1 ELSE 0 END`
+    ),
+    sql` + `
+  );
+
+  const conditions = sql.join(
+    keywords.map(
+      (word) => sql`content ILIKE ${"%" + word + "%"}`
+    ),
+    sql` OR `
   );
 
   const result = await db.execute(sql`
-    SELECT *
+    SELECT *,
+           (${score}) AS keyword_score
     FROM document_chunks
-    WHERE ${sql.join(conditions, sql` OR `)}
+    WHERE ${conditions}
+    ORDER BY keyword_score DESC
     LIMIT ${limit};
   `);
 
