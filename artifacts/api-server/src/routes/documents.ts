@@ -48,7 +48,10 @@ documentsRouter.post(
         storagePath: req.file.path,
       });
       const text = await extractPdfText(req.file.path);
-
+      console.log(text.includes("minimum"));
+      console.log(text.includes("grade"));
+      console.log(text.includes("M20"));
+      console.log(text.length);
       const chunks = await chunkText(text);
 
       await createDocumentChunks(document.id, chunks);
