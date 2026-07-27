@@ -99,67 +99,18 @@ export async function searchSimilarChunks(
 export async function searchKeywordChunks(
   keywords: string[],
   phrases: string[],
-  limit = 5
+  limit = 20
 ) {
-  if (keywords.length === 0 && phrases.length === 0) {
+  const searchText = [...phrases, ...keywords]
+    .filter(Boolean)
+    .join(" ");
+
+  if (!searchText.trim()) {
     return [];
   }
 
-  const phraseScore =
-    phrases.length > 0
-      ? sql.join(
-          phrases.map((phrase) => {
-            const words = phrase.split(" ");
-
-            let weight = 25;
-
-            if (words.length === 3) {
-              weight = 100;
-            } else if (words.length >= 4) {
-              weight = 200;
-            }
-
-            return sql`
-              CASE
-                WHEN content ILIKE ${"%" + phrase + "%"}
-                THEN ${weight}
-                ELSE 0
-              END
-            `;
-          }),
-          sql` + `
-        )
-      : sql`0`;
-
-  const keywordScore =
-    keywords.length > 0
-      ? sql.join(
-          keywords.map(
-            (word) => sql`
-              CASE
-                WHEN content ILIKE ${"%" + word + "%"}
-                THEN 1
-                ELSE 0
-              END
-            `
-          ),
-          sql` + `
-        )
-      : sql`0`;
-
-  const score = sql`${phraseScore} + ${keywordScore}`;
-
-  const conditions = sql.join(
-    [
-      ...phrases.map(
-        (phrase) => sql`content ILIKE ${"%" + phrase + "%"}`
-      ),
-      ...keywords.map(
-        (word) => sql`content ILIKE ${"%" + word + "%"}`
-      ),
-    ],
-    sql` OR `
-  );
+  console.log("\n===== FTS Query =====");
+  console.log(searchText);
 
   const result = await db.execute(sql`
     SELECT
@@ -168,10 +119,15 @@ export async function searchKeywordChunks(
       chunk_index,
       content,
       page_number,
-      ${score} AS score
+      ts_rank(
+        to_tsvector('english', content),
+        plainto_tsquery('english', ${searchText})
+      ) AS score
     FROM document_chunks
-    WHERE ${conditions}
-    ORDER BY score DESC, chunk_index ASC
+    WHERE
+      to_tsvector('english', content)
+      @@ plainto_tsquery('english', ${searchText})
+    ORDER BY score DESC
     LIMIT ${limit};
   `);
 
