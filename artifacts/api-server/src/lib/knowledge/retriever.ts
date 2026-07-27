@@ -117,6 +117,9 @@ export function extractSearchTerms(question: string) {
     phrases,
   };
 }
+function rrf(rank: number, k = 60): number {
+  return 1 / (k + rank);
+}
 export async function retrieveContext(question: string) {
   const embedding = await generateEmbedding(question);
 
@@ -134,33 +137,40 @@ export async function retrieveContext(question: string) {
   );
 
   // ----------------------------
-  // Hybrid Scoring
+  // Hybrid Scoring (RRF)
   // ----------------------------
   const scored = new Map<
     string,
-    (typeof semanticChunks)[number] & { score: number }
+    (typeof semanticChunks)[number] & {
+      score: number;
+      semanticRank?: number;
+      keywordRank?: number;
+    }
   >();
 
-  // Base score from semantic ranking
+  // Semantic ranking
   semanticChunks.forEach((chunk, index) => {
     scored.set(chunk.id as string, {
       ...chunk,
-      score: 100 - index * 5,
+      score: rrf(index + 1),
+      semanticRank: index + 1,
     });
   });
 
-  // Add keyword score
-  keywordChunks.forEach((chunk: any) => {
-    const keywordScore = Number(chunk.score ?? 0);
+  // Keyword ranking
+  keywordChunks.forEach((chunk: any, index: number) => {
+    const id = chunk.id as string;
 
-    const existing = scored.get(chunk.id);
+    if (scored.has(id)) {
+      const existing = scored.get(id)!;
 
-    if (existing) {
-      existing.score += keywordScore;
+      existing.score += rrf(index + 1);
+      existing.keywordRank = index + 1;
     } else {
-      scored.set(chunk.id, {
+      scored.set(id, {
         ...chunk,
-        score: keywordScore,
+        score: rrf(index + 1),
+        keywordRank: index + 1,
       });
     }
   });
@@ -196,12 +206,27 @@ export async function retrieveContext(question: string) {
   const rankedChunks = [...scored.values()].sort(
     (a, b) => b.score - a.score
   );
+  console.log("\n===== RRF Ranking =====");
 
-  console.log("===== Ranked Results =====");
-  console.log(
-    rankedChunks.map((chunk: any) => ({
+  rankedChunks.slice(0, 10).forEach((chunk: any, index: number) => {
+    console.log({
+      rank: index + 1,
       chunkIndex: chunk.chunk_index,
-      score: chunk.score,
+      score: chunk.score.toFixed(5),
+      semanticRank: chunk.semanticRank ?? "-",
+      keywordRank: chunk.keywordRank ?? "-",
+    });
+  });
+
+  console.log("\n===== Ranked Results =====");
+
+  console.table(
+    rankedChunks.slice(0, 10).map((chunk: any) => ({
+      chunk: chunk.chunk_index,
+      score: chunk.score.toFixed(5),
+      semantic: chunk.semanticRank ?? "-",
+      keyword: chunk.keywordRank ?? "-",
+      preview: chunk.content.substring(0, 80).replace(/\n/g, " "),
     }))
   );
 
