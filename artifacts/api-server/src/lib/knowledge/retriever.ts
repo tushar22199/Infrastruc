@@ -122,12 +122,15 @@ export async function retrieveContext(question: string) {
 
   const { keywords, phrases } = extractSearchTerms(question);
 
-  const semanticChunks = await searchSimilarChunks(embedding, 5);
+  const semanticChunks = await searchSimilarChunks(
+    embedding,
+    20
+  );
 
   const keywordChunks = await searchKeywordChunks(
     keywords,
     phrases,
-    5
+    20
   );
 
   // ----------------------------
@@ -240,7 +243,7 @@ export async function retrieveContext(question: string) {
     const neighbors = await getNeighborChunks(
       chunk.document_id as string,
       chunk.chunk_index as number,
-      1
+      3
     );
 
     expandedChunks.push(...neighbors);
@@ -248,13 +251,22 @@ export async function retrieveContext(question: string) {
 
   const uniqueExpanded = Array.from(
     new Map(
-      expandedChunks.map((chunk: any) => [chunk.id, chunk])
+      expandedChunks.map((chunk: any) => [
+        `${chunk.document_id}:${chunk.chunk_index}`,
+        chunk,
+      ])
     ).values()
   );
 
-  uniqueExpanded.sort(
-    (a: any, b: any) => a.chunkIndex - b.chunkIndex
-  );
+  uniqueExpanded.sort((a: any, b: any) => {
+    if (a.document_id !== b.document_id) {
+      return String(a.document_id).localeCompare(
+        String(b.document_id)
+      );
+    }
+
+    return a.chunk_index - b.chunk_index;
+  });
 
   console.log("===== Final Context =====");
   console.log(
