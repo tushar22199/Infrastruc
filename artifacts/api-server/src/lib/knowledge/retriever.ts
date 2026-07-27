@@ -53,7 +53,10 @@ export function extractSearchTerms(question: string) {
   const keywords = [
     ...new Set(
       rawWords.filter(
-        (word) => word.length > 2 && !STOP_WORDS.has(word)
+        (word) =>
+          word.length > 2 &&
+          !STOP_WORDS.has(word) &&
+          !/^\d+$/.test(word) // Remove pure numbers
       )
     ),
   ];
@@ -111,7 +114,11 @@ export function extractSearchTerms(question: string) {
 
     return meaningfulWords.length >= 2;
   });
+  console.log("\n===== Keywords =====");
+  console.log(keywords);
 
+  console.log("===== Phrases =====");
+  console.log(phrases);
   return {
     keywords,
     phrases,
