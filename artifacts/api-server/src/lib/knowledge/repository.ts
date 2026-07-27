@@ -101,17 +101,13 @@ export async function searchKeywordChunks(
   phrases: string[],
   limit = 20
 ) {
-  const searchText = [...phrases, ...keywords]
-    .filter(Boolean)
-    .join(" ");
+  const searchText = keywords
+  .slice(0, 6)
+  .join(" ");
 
   if (!searchText.trim()) {
     return [];
   }
-
-  console.log("\n===== FTS Query =====");
-  console.log(searchText);
-
   const result = await db.execute(sql`
     SELECT
       id,
@@ -130,6 +126,19 @@ export async function searchKeywordChunks(
     ORDER BY score DESC
     LIMIT ${limit};
   `);
+  console.log("\n===== FTS Query =====");
+  console.log(searchText);
+  console.log(`Returned ${result.rows.length} rows`);
+
+  console.table(
+    result.rows.map((row: any) => ({
+      chunk: row.chunk_index,
+      score: Number(row.score).toFixed(5),
+      preview: row.content.substring(0, 80).replace(/\n/g, " "),
+    }))
+  );
+
+ 
 
   return result.rows;
 }
