@@ -6,6 +6,9 @@ import {
   documentChunksTable,
 } from "@workspace/db";
 
+/* -------------------------------------------------------------------------- */
+/*                               Document CRUD                                */
+/* -------------------------------------------------------------------------- */
 
 export async function createDocument(
   document: typeof documentsTable.$inferInsert
@@ -17,16 +20,20 @@ export async function createDocument(
 
   return created;
 }
+
 export async function listDocuments() {
-  return db
-    .select()
-    .from(documentsTable);
+  return db.select().from(documentsTable);
 }
+
+/* -------------------------------------------------------------------------- */
+/*                              Chunk Management                              */
+/* -------------------------------------------------------------------------- */
+
 export async function createDocumentChunks(
   documentId: string,
-  chunks: string[],
+  chunks: string[]
 ) {
-  if (chunks.length === 0) return;
+  if (!chunks.length) return;
 
   await db.insert(documentChunksTable).values(
     chunks.map((chunk, index) => ({
@@ -34,9 +41,10 @@ export async function createDocumentChunks(
       chunkIndex: index,
       content: chunk,
       pageNumber: null,
-    })),
+    }))
   );
 }
+
 export async function getDocumentChunks(documentId: string) {
   return db
     .select()
@@ -44,9 +52,10 @@ export async function getDocumentChunks(documentId: string) {
     .where(eq(documentChunksTable.documentId, documentId))
     .orderBy(documentChunksTable.chunkIndex);
 }
+
 export async function updateChunkEmbedding(
   chunkId: string,
-  embedding: number[],
+  embedding: number[]
 ) {
   await db
     .update(documentChunksTable)
@@ -55,6 +64,11 @@ export async function updateChunkEmbedding(
     })
     .where(eq(documentChunksTable.id, chunkId));
 }
+
+/* -------------------------------------------------------------------------- */
+/*                            Semantic Vector Search                          */
+/* -------------------------------------------------------------------------- */
+
 export async function searchSimilarChunks(
   queryEmbedding: number[],
   limit = 5
@@ -77,34 +91,57 @@ export async function searchSimilarChunks(
 
   return result.rows;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                              Keyword Search                                */
+/* -------------------------------------------------------------------------- */
+
 export async function searchKeywordChunks(
   keywords: string[],
   phrases: string[],
-  limit = 10
+  limit = 5
 ) {
   if (keywords.length === 0 && phrases.length === 0) {
     return [];
   }
 
-  // Phrase scoring (high weight)
   const phraseScore =
     phrases.length > 0
       ? sql.join(
-          phrases.map(
-            (phrase) =>
-              sql`CASE WHEN content ILIKE ${"%" + phrase + "%"} THEN 100 ELSE 0 END`
-          ),
+          phrases.map((phrase) => {
+            const words = phrase.split(" ");
+
+            let weight = 25;
+
+            if (words.length === 3) {
+              weight = 100;
+            } else if (words.length >= 4) {
+              weight = 200;
+            }
+
+            return sql`
+              CASE
+                WHEN content ILIKE ${"%" + phrase + "%"}
+                THEN ${weight}
+                ELSE 0
+              END
+            `;
+          }),
           sql` + `
         )
       : sql`0`;
 
-  // Keyword scoring (low weight)
   const keywordScore =
     keywords.length > 0
       ? sql.join(
           keywords.map(
-            (word) =>
-              sql`CASE WHEN content ILIKE ${"%" + word + "%"} THEN 1 ELSE 0 END`
+            (word) => sql`
+              CASE
+                WHEN content ILIKE ${"%" + word + "%"}
+                THEN 1
+                ELSE 0
+              END
+            `
           ),
           sql` + `
         )
@@ -125,22 +162,32 @@ export async function searchKeywordChunks(
   );
 
   const result = await db.execute(sql`
-    SELECT *,
-           (${score}) AS keyword_score
+    SELECT
+      id,
+      document_id,
+      chunk_index,
+      content,
+      page_number,
+      ${score} AS score
     FROM document_chunks
     WHERE ${conditions}
-    ORDER BY keyword_score DESC, chunk_index
+    ORDER BY score DESC, chunk_index ASC
     LIMIT ${limit};
   `);
 
   return result.rows;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                           Neighbor Chunk Expansion                         */
+/* -------------------------------------------------------------------------- */
+
 export async function getNeighborChunks(
   documentId: string,
   chunkIndex: number,
   window = 2
 ) {
-  return await db
+  return db
     .select()
     .from(documentChunksTable)
     .where(
