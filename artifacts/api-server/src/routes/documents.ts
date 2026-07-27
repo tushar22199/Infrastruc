@@ -53,7 +53,16 @@ documentsRouter.post(
       console.log(text.includes("M20"));
       console.log(text.length);
       const chunks = await chunkText(text);
+      const index = text.toLowerCase().indexOf("m20");
 
+      if (index !== -1) {
+        console.log(
+          text.substring(
+            Math.max(0, index - 300),
+            index + 300
+          )
+        );
+      }
       await createDocumentChunks(document.id, chunks);
 
       // Run embedding in the background
