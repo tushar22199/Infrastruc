@@ -124,18 +124,54 @@ export async function retrieveContext(question: string) {
 
   const semanticChunks = await searchSimilarChunks(embedding, 5);
 
-  
   const keywordChunks = await searchKeywordChunks(
-      keywords,
-      phrases,
-      5
+    keywords,
+    phrases,
+    5
   );
+
+  // ----------------------------
+  // Hybrid Scoring
+  // ----------------------------
+  const scored = new Map<
+    string,
+    (typeof semanticChunks)[number] & { score: number }
+  >();
+
+  // Base score from semantic ranking
+  semanticChunks.forEach((chunk, index) => {
+    scored.set(chunk.id as string, {
+      ...chunk,
+      score: 100 - index * 5,
+    });
+  });
+
+  // Add keyword score
+  keywordChunks.forEach((chunk: any) => {
+    const keywordScore = Number(chunk.score ?? 0);
+
+    const existing = scored.get(chunk.id);
+
+    if (existing) {
+      existing.score += keywordScore;
+    } else {
+      scored.set(chunk.id, {
+        ...chunk,
+        score: keywordScore,
+      });
+    }
+  });
+
+  // ----------------------------
+  // Debug Logs
+  // ----------------------------
   console.log("===== Keywords =====");
   console.log(keywords);
+
   console.log("===== Phrases =====");
   console.log(phrases);
+
   console.log("===== Semantic Results =====");
-  
   console.log(
     semanticChunks.map((chunk: any) => ({
       chunkIndex: chunk.chunk_index,
@@ -147,16 +183,31 @@ export async function retrieveContext(question: string) {
   console.log(
     keywordChunks.map((chunk: any) => ({
       chunkIndex: chunk.chunk_index,
+      keywordScore: chunk.score,
     }))
   );
-  const mergedChunks = [
-    ...semanticChunks,
-    ...keywordChunks,
-  ];
 
+  // ----------------------------
+  // Rank by combined score
+  // ----------------------------
+  const rankedChunks = [...scored.values()].sort(
+    (a, b) => b.score - a.score
+  );
+
+  console.log("===== Ranked Results =====");
+  console.log(
+    rankedChunks.map((chunk: any) => ({
+      chunkIndex: chunk.chunk_index,
+      score: chunk.score,
+    }))
+  );
+
+  // ----------------------------
+  // Remove duplicate chunks
+  // ----------------------------
   const seen = new Set<string>();
 
-  const uniqueChunks = mergedChunks.filter((chunk: any) => {
+  const uniqueChunks = rankedChunks.filter((chunk: any) => {
     const key = chunk.content
       .replace(/\s+/g, " ")
       .trim();
@@ -168,8 +219,23 @@ export async function retrieveContext(question: string) {
     seen.add(key);
     return true;
   });
+
+  // Top chunks
   const topChunks = uniqueChunks.slice(0, 5);
+
+  console.log("===== Top Chunks =====");
+  console.log(
+    topChunks.map((chunk: any) => ({
+      chunkIndex: chunk.chunk_index,
+      score: chunk.score,
+    }))
+  );
+
+  // ----------------------------
+  // Neighbor Expansion
+  // ----------------------------
   const expandedChunks: any[] = [];
+
   for (const chunk of topChunks) {
     const neighbors = await getNeighborChunks(
       chunk.document_id as string,
@@ -179,13 +245,23 @@ export async function retrieveContext(question: string) {
 
     expandedChunks.push(...neighbors);
   }
+
   const uniqueExpanded = Array.from(
     new Map(
       expandedChunks.map((chunk: any) => [chunk.id, chunk])
     ).values()
   );
+
   uniqueExpanded.sort(
     (a: any, b: any) => a.chunkIndex - b.chunkIndex
   );
+
+  console.log("===== Final Context =====");
+  console.log(
+    uniqueExpanded.map((chunk: any) => ({
+      chunkIndex: chunk.chunkIndex,
+    }))
+  );
+
   return uniqueExpanded;
 }
