@@ -134,13 +134,13 @@ export async function retrieveContext(question: string) {
 
   const semanticChunks = await searchSimilarChunks(
     embedding,
-    20
+    40
   );
 
   const keywordChunks = await searchKeywordChunks(
     keywords,
     phrases,
-    20
+    40
   );
 
   // ----------------------------
@@ -256,7 +256,7 @@ export async function retrieveContext(question: string) {
   });
 
   // Top chunks
-  const topChunks = uniqueChunks.slice(0, 5);
+  const topChunks = uniqueChunks.slice(0, 10);
 
   console.log("===== Top Chunks =====");
   console.log(

@@ -101,9 +101,10 @@ export async function searchKeywordChunks(
   phrases: string[],
   limit = 20
 ) {
-  const searchText = keywords
-  .slice(0, 6)
-  .join(" ");
+  const searchText = [
+    ...phrases.slice(0, 3).map((p) => `"${p}"`),
+    ...keywords,
+  ].join(" ");
 
   if (!searchText.trim()) {
     return [];
@@ -117,12 +118,12 @@ export async function searchKeywordChunks(
       page_number,
       ts_rank(
         to_tsvector('english', content),
-        plainto_tsquery('english', ${searchText})
+        websearch_to_tsquery('english', ${searchText})
       ) AS score
     FROM document_chunks
     WHERE
       to_tsvector('english', content)
-      @@ plainto_tsquery('english', ${searchText})
+      @@ websearch_to_tsquery('english', ${searchText})
     ORDER BY score DESC
     LIMIT ${limit};
   `);
