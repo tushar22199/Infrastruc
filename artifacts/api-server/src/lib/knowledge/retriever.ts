@@ -305,5 +305,19 @@ export async function retrieveContext(question: string) {
     }))
   );
 
-  return uniqueExpanded;
+  const MAX_CONTEXT_CHARS = 12000;
+
+  let totalChars = 0;
+  const finalContext = [];
+
+  for (const chunk of uniqueExpanded) {
+    if (totalChars + chunk.content.length > MAX_CONTEXT_CHARS) {
+      break;
+    }
+
+    finalContext.push(chunk);
+    totalChars += chunk.content.length;
+  }
+
+  return finalContext;
 }
