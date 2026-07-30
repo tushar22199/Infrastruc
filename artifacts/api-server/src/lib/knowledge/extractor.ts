@@ -1,38 +1,27 @@
 import fs from "fs/promises";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import pdfParse from "pdf-parse";
 
 function normalizePdfText(text: string): string {
   return text
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Za-z])(\d)/g, "$1 $2")
+    .replace(/(\d)([A-Za-z])/g, "$1 $2")
     .replace(/\s+([.,;:])/g, "$1")
     .trim();
 }
 
 export async function extractPdfText(filePath: string): Promise<string> {
-  const data = await fs.readFile(filePath);
+  const buffer = await fs.readFile(filePath);
 
-  const loadingTask = pdfjsLib.getDocument({
-    data: new Uint8Array(data),
-  });
+  const result = await pdfParse(buffer);
 
-  const pdf = await loadingTask.promise;
+  const text = normalizePdfText(result.text);
 
-  const pages: string[] = [];
+  console.log("===== PDF TEXT PREVIEW =====");
+  console.log(text.slice(0, 3000));
 
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-
-    const content = await page.getTextContent();
-
-    const text = content.items
-      .map((item: any) => item.str)
-      .join(" ");
-
-    pages.push(text);
-  }
-  console.log("===== Extracted Text Preview =====");
-  console.log(pages.join("\n\n").slice(0, 3000));
-  return normalizePdfText(pages.join("\n\n"));
+  return text;
 }
