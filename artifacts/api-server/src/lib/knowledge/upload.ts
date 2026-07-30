@@ -25,6 +25,11 @@ export const upload = multer({
     fileSize: 20 * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
+    console.log("========== FILE INFO ==========");
+    console.log("Original Name:", file.originalname);
+    console.log("Mime Type:", file.mimetype);
+    console.log("===============================");
+
     if (file.mimetype !== "application/pdf") {
       return cb(new Error("Only PDF files are allowed"));
     }
