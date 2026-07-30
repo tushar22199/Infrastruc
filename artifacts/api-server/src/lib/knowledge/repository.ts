@@ -152,7 +152,7 @@ export async function getNeighborChunks(
   chunkIndex: number,
   window = 2
 ) {
-  return db
+  const rows = await db
     .select()
     .from(documentChunksTable)
     .where(
@@ -163,4 +163,11 @@ export async function getNeighborChunks(
       )
     )
     .orderBy(documentChunksTable.chunkIndex);
+
+  console.log(
+    `Neighbors for chunk ${chunkIndex}:`,
+    rows.map((r) => r.chunkIndex)
+  );
+
+  return rows;
 }

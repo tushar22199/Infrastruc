@@ -284,20 +284,18 @@ export async function retrieveContext(question: string) {
   const uniqueExpanded = Array.from(
     new Map(
       expandedChunks.map((chunk: any) => [
-        `${chunk.document_id}:${chunk.chunk_index}`,
+        `${chunk.documentId}:${chunk.chunkIndex}`,
         chunk,
       ])
     ).values()
   );
 
   uniqueExpanded.sort((a: any, b: any) => {
-    if (a.document_id !== b.document_id) {
-      return String(a.document_id).localeCompare(
-        String(b.document_id)
-      );
+    if (a.documentId !== b.documentId) {
+      return String(a.documentId).localeCompare(String(b.documentId));
     }
 
-    return a.chunk_index - b.chunk_index;
+    return a.chunkIndex - b.chunkIndex;
   });
 
   console.log("===== Final Context =====");
