@@ -154,12 +154,13 @@ export async function retrieveContext(question: string) {
       keywordRank?: number;
     }
   >();
-
+  const SEMANTIC_WEIGHT = 0.7;
+  const KEYWORD_WEIGHT = 1.3;
   // Semantic ranking
   semanticChunks.forEach((chunk, index) => {
     scored.set(chunk.id as string, {
       ...chunk,
-      score: rrf(index + 1),
+      score: rrf(index + 1) * SEMANTIC_WEIGHT,
       semanticRank: index + 1,
     });
   });
@@ -171,12 +172,12 @@ export async function retrieveContext(question: string) {
     if (scored.has(id)) {
       const existing = scored.get(id)!;
 
-      existing.score += rrf(index + 1);
+      existing.score += rrf(index + 1) * KEYWORD_WEIGHT;
       existing.keywordRank = index + 1;
     } else {
       scored.set(id, {
         ...chunk,
-        score: rrf(index + 1),
+        score: rrf(index + 1) * KEYWORD_WEIGHT,
         keywordRank: index + 1,
       });
     }
@@ -224,8 +225,68 @@ export async function retrieveContext(question: string) {
       keywordRank: chunk.keywordRank ?? "-",
     });
   });
+  // ----------------------------
+  // Lexical Re-ranking
+  // ----------------------------
+ 
 
-  console.log("\n===== Ranked Results =====");
+  for (const chunk of rankedChunks) {
+    const text = String(chunk.content).toLowerCase();
+
+    let bonus = 0;
+
+    // Reward chunks containing important query terms
+    const IMPORTANT_TERMS = keywords
+      .map((k) => k.toLowerCase())
+      .filter((k) => k.length >= 3);
+
+    for (const term of IMPORTANT_TERMS) {
+      if (text.includes(term)) {
+        bonus += 0.005;
+      }
+    }
+
+    for (const phrase of phrases) {
+      if (text.includes(phrase.toLowerCase())) {
+        bonus += 0.03;
+      }
+    }
+
+    // Engineering-specific boosts
+    if (text.includes("table")) {
+      bonus += 0.02;
+    }
+
+    if (text.includes("clause")) {
+      bonus += 0.02;
+    }
+
+    if (text.includes("figure")) {
+      bonus += 0.01;
+    }
+
+    if (text.includes("note")) {
+      bonus += 0.01;
+    }
+    if (/table\s+\d+/i.test(text)) {
+      bonus += 0.05;
+    }
+
+    if (/clause\s+\d+(\.\d+)*/i.test(text)) {
+      bonus += 0.03;
+    }
+
+    if (/m\d+/i.test(text)) {
+      bonus += 0.03;
+    }
+
+    chunk.score += bonus;
+  }
+
+  // Re-sort after applying bonuses
+  rankedChunks.sort((a, b) => b.score - a.score);
+
+  console.log("\n===== After Lexical Re-ranking =====");
 
   console.table(
     rankedChunks.slice(0, 10).map((chunk: any) => ({
@@ -256,7 +317,7 @@ export async function retrieveContext(question: string) {
   });
 
   // Top chunks
-  const topChunks = uniqueChunks.slice(0, 10);
+  const topChunks = uniqueChunks.slice(0, 8);
 
   console.log("===== Top Chunks =====");
   console.log(
@@ -299,6 +360,9 @@ export async function retrieveContext(question: string) {
   });
 
   console.log("===== Final Context =====");
+  
+
+  
   console.log(
     uniqueExpanded.map((chunk: any) => ({
       chunkIndex: chunk.chunkIndex,
@@ -308,6 +372,7 @@ export async function retrieveContext(question: string) {
   const MAX_CONTEXT_CHARS = 12000;
 
   let totalChars = 0;
+ 
   const finalContext = [];
 
   for (const chunk of uniqueExpanded) {
@@ -318,6 +383,9 @@ export async function retrieveContext(question: string) {
     finalContext.push(chunk);
     totalChars += chunk.content.length;
   }
+  console.log("Final chunks:", finalContext.length);
+  console.log("Total chars:", totalChars);
+
 
   return finalContext;
 }
