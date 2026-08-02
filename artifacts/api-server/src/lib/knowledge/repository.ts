@@ -76,18 +76,21 @@ export async function searchSimilarChunks(
   const embedding = `[${queryEmbedding.join(",")}]`;
 
   const result = await db.execute(sql`
-    SELECT
-      id,
-      document_id,
-      chunk_index,
-      content,
-      page_number,
-      embedding <=> ${embedding}::vector AS distance
-    FROM document_chunks
-    WHERE embedding IS NOT NULL
-    ORDER BY embedding <=> ${embedding}::vector
-    LIMIT ${limit};
-  `);
+  SELECT
+    dc.id,
+    dc.document_id,
+    d.title AS "documentTitle",
+    dc.chunk_index,
+    dc.content,
+    dc.page_number,
+    dc.embedding <=> ${embedding}::vector AS distance
+  FROM document_chunks dc
+  JOIN documents d
+    ON dc.document_id = d.id
+  WHERE dc.embedding IS NOT NULL
+  ORDER BY dc.embedding <=> ${embedding}::vector
+  LIMIT ${limit};
+`);
 
   return result.rows;
 }
@@ -111,22 +114,25 @@ export async function searchKeywordChunks(
   }
   const result = await db.execute(sql`
     SELECT
-      id,
-      document_id,
-      chunk_index,
-      content,
-      page_number,
-      ts_rank(
-        to_tsvector('english', content),
-        websearch_to_tsquery('english', ${searchText})
-      ) AS score
-    FROM document_chunks
-    WHERE
-      to_tsvector('english', content)
-      @@ websearch_to_tsquery('english', ${searchText})
-    ORDER BY score DESC
-    LIMIT ${limit};
-  `);
+    dc.id,
+    dc.document_id,
+   d.title AS "documentTitle",
+    dc.chunk_index,
+    dc.content,
+    dc.page_number,
+    ts_rank(
+      to_tsvector('english', dc.content),
+      websearch_to_tsquery('english', ${searchText})
+    ) AS score
+  FROM document_chunks dc
+  JOIN documents d
+    ON dc.document_id = d.id
+  WHERE
+    to_tsvector('english', dc.content)
+    @@ websearch_to_tsquery('english', ${searchText})
+  ORDER BY score DESC
+  LIMIT ${limit};
+`);
   console.log("\n===== FTS Query =====");
   console.log(searchText);
   console.log(`Returned ${result.rows.length} rows`);
@@ -153,22 +159,28 @@ export async function getNeighborChunks(
   chunkIndex: number,
   window = 2
 ) {
-  const rows = await db
-    .select()
-    .from(documentChunksTable)
-    .where(
-      and(
-        eq(documentChunksTable.documentId, documentId),
-        gte(documentChunksTable.chunkIndex, chunkIndex - window),
-        lte(documentChunksTable.chunkIndex, chunkIndex + window)
-      )
-    )
-    .orderBy(documentChunksTable.chunkIndex);
+  const result = await db.execute(sql`
+    SELECT
+      dc.id,
+      dc.document_id,
+      d.title AS "documentTitle",
+      dc.chunk_index,
+      dc.page_number,
+      dc.content
+    FROM document_chunks dc
+    JOIN documents d
+      ON dc.document_id = d.id
+    WHERE
+      dc.document_id = ${documentId}
+      AND dc.chunk_index >= ${chunkIndex - window}
+      AND dc.chunk_index <= ${chunkIndex + window}
+    ORDER BY dc.chunk_index;
+  `);
 
   console.log(
     `Neighbors for chunk ${chunkIndex}:`,
-    rows.map((r) => r.chunkIndex)
+    result.rows.map((r: any) => r.chunk_index)
   );
 
-  return rows;
+  return result.rows;
 }

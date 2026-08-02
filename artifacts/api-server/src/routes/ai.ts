@@ -38,20 +38,17 @@ const upload = multer({
   },
 });
 
-aiRouter.post(
-  "/insights",
-  validate(InsightsSchema),
-  async (req, res) => {
-    try {
-      const {
-        totalInspections,
-        activeIssues,
-        regionalHealth,
-        overdueInspections,
-        severityBreakdown,
-      } = req.body;
+aiRouter.post("/insights", validate(InsightsSchema), async (req, res) => {
+  try {
+    const {
+      totalInspections,
+      activeIssues,
+      regionalHealth,
+      overdueInspections,
+      severityBreakdown,
+    } = req.body;
 
-      const prompt = `
+    const prompt = `
 You are an infrastructure auditing expert.
 
 Dashboard Data:
@@ -69,30 +66,29 @@ Generate:
 - Recommendation
 `;
 
-      const response = await client.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
+    const response = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
 
-      res.json({
-        success: true,
-        insight: response.choices[0].message.content,
-      });
-    } catch (err) {
-      console.error(err);
+    res.json({
+      success: true,
+      insight: response.choices[0].message.content,
+    });
+  } catch (err) {
+    console.error(err);
 
-      res.status(500).json({
-        success: false,
-        message: "Failed to generate AI insights",
-      });
-    }
-  },
-);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate AI insights",
+    });
+  }
+});
 aiRouter.post("/chat", async (req, res) => {
   try {
     const { messages } = req.body;
@@ -116,7 +112,9 @@ aiRouter.post("/chat", async (req, res) => {
 
     const inspections = await retrieveRelevantInspections(question);
     const documentChunks = await retrieveContext(question);
-    console.log("=== Retrieved Chunks ===");
+    console.log("===== First Retrieved Chunk =====");
+    console.dir(documentChunks[0], { depth: null });
+    
 
     documentChunks.forEach((chunk: any, index: number) => {
       console.log({
@@ -132,18 +130,25 @@ aiRouter.post("/chat", async (req, res) => {
     });
     const documentContext = documentChunks
       .map(
-        (chunk: any, index: number) => `
-    ## Document Chunk ${index + 1}
+        (chunk: any) => `
+    ========================================
+    Document: ${chunk.documentTitle ?? "Engineering Document"}
+
+    Page: ${chunk.pageNumber ?? "Unknown"}
+
+   
+
+    Content:
 
     ${chunk.content}
 
-    ----------------------------------------
-    `
+    ========================================
+    `,
       )
       .join("\n");
     const reportInspections = isReportRequest
-    ? inspections.slice(0, 100)
-    : inspections.slice(0, 10);
+      ? inspections.slice(0, 100)
+      : inspections.slice(0, 10);
     const inspectionContext = reportInspections
       .map(
         (inspection: any, index: number) => `
@@ -320,16 +325,24 @@ ${inspectionContext}
 
         These documents are authoritative sources.
 
-        Guidelines:
+        Rules:
 
-        - Use the engineering documents as the primary source for technical standards, design requirements, material specifications, and code provisions.
-        - Use inspection data as evidence of field conditions.
-        - When both inspection data and engineering documents are relevant, combine them naturally.
-        - If the engineering documents do not contain the requested information, explicitly state that instead of guessing.
-        - Never fabricate engineering standards or code requirements.
-        - Prefer information directly supported by the retrieved document context.
+        - Use ONLY the retrieved document context when answering questions about engineering standards.
+        - Do NOT rely on prior knowledge if the retrieved context contains the answer.
+        - If the answer is not present in the retrieved context, explicitly state that.
+        - Never invent clauses, tables, or values.
+        - When answering, cite the retrieved source.
 
-        Engineering Document Context:
+        At the end of every technical answer include:
+
+        ### Sources
+
+        For each source include:
+
+        - Document
+        - Page number (if available)
+
+        Do NOT mention internal chunk numbers.
 
         ${documentContext}
         `,
