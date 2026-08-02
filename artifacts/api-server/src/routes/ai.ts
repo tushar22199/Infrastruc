@@ -93,7 +93,8 @@ aiRouter.post("/chat", async (req, res) => {
   try {
     const { messages } = req.body;
 
-    const latestMessage = messages[messages.length - 1]?.content ?? "";
+    const latestMessage =
+      messages.at(-1)?.content?.trim() ?? "";
 
     const question = latestMessage.toLowerCase();
 
@@ -110,40 +111,53 @@ aiRouter.post("/chat", async (req, res) => {
       "assessment",
     ].some((keyword) => question.includes(keyword));
 
-    const inspections = await retrieveRelevantInspections(question);
-    const documentChunks = await retrieveContext(question);
-    console.log("===== First Retrieved Chunk =====");
-    console.dir(documentChunks[0], { depth: null });
-    
+    const isEngineeringQuestion =
+      /(is\s?\d+|clause|table|figure|annex|beam|column|slab|footing|foundation|pile|steel|cement|concrete|reinforcement|aggregate|mix|water.?cement|cover|development length|lap splice|shear|moment|torsion|durability|grade|m\d+|irc|morth|cpheeo)/i.test(
+        question
+      );
 
-    documentChunks.forEach((chunk: any, index: number) => {
+    const isInspectionQuestion =
+      /(inspection|issue|report|audit|maintenance|asset|severity|defect|bridge|road|building)/i.test(
+        question
+      );
+
+    const inspections = isInspectionQuestion
+      ? await retrieveRelevantInspections(question)
+      : [];
+
+    const documentChunks = isEngineeringQuestion
+      ? await retrieveContext(question)
+      : [];
+    
+    const DEBUG_RAG = process.env.DEBUG_RAG === "true";
+    if (DEBUG_RAG) {
+    documentChunks.forEach((chunk, index) => {
       console.log({
         rank: index + 1,
         id: chunk.id,
-        documentId: chunk.documentId,
-        chunkIndex: chunk.chunkIndex,
-        page: chunk.pageNumber,
+        documentId: chunk.document_id,
+        chunkIndex: chunk.chunk_index,
+        page: chunk.page_number,
       });
+      
 
       console.log(chunk.content.substring(0, 300));
       console.log("--------------------");
     });
+    }
     const documentContext = documentChunks
       .map(
         (chunk: any) => `
     ========================================
-    Document: ${chunk.documentTitle ?? "Engineering Document"}
 
-    Page: ${chunk.pageNumber ?? "Unknown"}
+    Document: ${chunk.documentTitle}
 
-   
-
-    Content:
+    Page: ${chunk.page_number ?? "Unknown"}
 
     ${chunk.content}
 
     ========================================
-    `,
+    `
       )
       .join("\n");
     const reportInspections = isReportRequest
@@ -259,122 +273,140 @@ Requirements:
 `
       : "";
 
+  
+    // Build prompt messages
+    const chatHistory = messages
+      .slice(-8, -1)
+      .filter(
+        (message: any) =>
+          message.role === "user" ||
+          message.role === "assistant"
+      ) as {
+      role: "user" | "assistant";
+      content: string;
+    }[];
+
+    const promptMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: `
+    You are Infrastructure Copilot, an expert civil and infrastructure engineering assistant.
+
+    You specialize in:
+
+    - Infrastructure inspections
+    - Structural engineering
+    - Roads, bridges and buildings
+    - Asset management
+    - Risk assessment
+    - Preventive maintenance
+    - Engineering standards
+
+    General Rules:
+
+    - Always answer in Markdown.
+    - Use headings and bullet points.
+    - Explain engineering reasoning.
+    - Never fabricate engineering values.
+    - Never invent inspection data.
+    - If information is unavailable, clearly state it.
+    - Prioritize public safety.
+    - Recommend practical engineering actions.
+    - Use professional engineering language.
+
+    Engineering Standards Rules:
+
+    - If engineering references are supplied, use ONLY those references.
+    - Never invent clauses, tables, values or code provisions.
+    - If the answer is not present in the supplied references, explicitly state that.
+    - Never mention internal chunk IDs or database identifiers.
+
+    When answering engineering questions always finish with:
+
+    ### Sources
+
+    • Document:
+    • Page:
+    `,
+      },
+    ];
+
+    // ----------------------------
+    // Inspection Context
+    // ----------------------------
+    if (isInspectionQuestion && reportInspections.length) {
+      promptMessages.push({
+        role: "system",
+        content: `
+    Current inspection data
+
+    Total inspections: ${reportInspections.length}
+
+    ${inspectionContext}
+    `,
+      });
+    }
+
+    // ----------------------------
+    // Report Instructions
+    // ----------------------------
+    if (reportInstruction) {
+      promptMessages.push({
+        role: "system",
+        content: reportInstruction,
+      });
+    }
+
+    // ----------------------------
+    // Previous Conversation
+    // ----------------------------
+    promptMessages.push(...chatHistory);
+
+    // ----------------------------
+    // Current User Message
+    // ----------------------------
+    if (documentChunks.length) {
+      promptMessages.push({
+        role: "user",
+        content: `
+    Engineering References
+
+    ${documentContext}
+
+    ----------------------------------------
+
+    Question
+
+    ${latestMessage}
+    `,
+      });
+    } else {
+      promptMessages.push({
+        role: "user",
+        content: latestMessage,
+      });
+    }
+
+    // ----------------------------
+    // LLM Call
+    // ----------------------------
     const response = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: `
-You are Infrastructure Copilot, an expert civil and infrastructure engineering assistant.
-
-You specialize in:
-
-- Infrastructure inspections
-- Structural engineering
-- Roads, bridges, buildings
-- Asset management
-- Risk assessment
-- Preventive maintenance
-- Engineering standards
-
-Rules:
-
-- Always answer in Markdown.
-- Use headings and bullet points.
-- Explain engineering reasoning.
-- Never invent inspection data.
-- If information is unavailable, clearly state assumptions.
-- Prioritize public safety.
-- Provide practical recommendations.
-- Use professional engineering language.
-When preparing inspection reports:
-
-- Prioritize human safety.
-- Rank findings by engineering risk.
-- Reference evidence from the inspection data.
-- Avoid repeating the same issue.
-- Write concise executive summaries.
-- Recommend practical engineering actions.
-- If multiple critical defects exist, prioritize them.
-- Think like a senior civil engineering consultant preparing a report for management.
-
-When discussing inspections, include where appropriate:
-
-- Executive Summary
-- Key Findings
-- Risk Assessment
-- Recommended Actions
-- Maintenance Priority
-- Preventive Maintenance
-- Conclusion
-`,
-        },
-
-        {
-          role: "system",
-          content: `
-Current inspection data:
-Total inspections supplied: ${reportInspections.length}
-${inspectionContext}
-`,
-        },
-        {
-          role: "system",
-          content: `
-        You have access to engineering standards and technical reference documents.
-
-        These documents are authoritative sources.
-
-        Rules:
-
-        - Use ONLY the retrieved document context when answering questions about engineering standards.
-        - Do NOT rely on prior knowledge if the retrieved context contains the answer.
-        - If the answer is not present in the retrieved context, explicitly state that.
-        - Never invent clauses, tables, or values.
-        - When answering, cite the retrieved source.
-
-        At the end of every technical answer include:
-
-        ### Sources
-
-        For each source include:
-
-        - Document
-        - Page number (if available)
-
-        Do NOT mention internal chunk numbers.
-
-        ${documentContext}
-        `,
-        },
-
-        ...(reportInstruction
-          ? [
-              {
-                role: "system" as const,
-                content: reportInstruction,
-              },
-            ]
-          : []),
-
-        ...(messages as {
-          role: "user" | "assistant";
-          content: string;
-        }[]),
-      ],
+      temperature: 0.2,
+      messages: promptMessages,
     });
 
     res.json({
       reply: response.choices[0].message.content,
     });
-  } catch (err) {
-    console.error(err);
+    } catch (err) {
+      console.error(err);
 
-    res.status(500).json({
-      reply: "Sorry, something went wrong.",
+      res.status(500).json({
+        reply: "Sorry, something went wrong.",
+      });
+    }
     });
-  }
-});
 aiRouter.post(
   "/analyze-image",
 
@@ -436,3 +468,4 @@ aiRouter.get("/models", async (_req, res) => {
   }
 });
 export default aiRouter;
+  

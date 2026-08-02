@@ -345,18 +345,18 @@ export async function retrieveContext(question: string) {
   const uniqueExpanded = Array.from(
     new Map(
       expandedChunks.map((chunk: any) => [
-        `${chunk.documentId}:${chunk.chunkIndex}`,
+        `${chunk.document_id}:${chunk.chunk_index}`,
         chunk,
       ])
     ).values()
   );
 
   uniqueExpanded.sort((a: any, b: any) => {
-    if (a.documentId !== b.documentId) {
-      return String(a.documentId).localeCompare(String(b.documentId));
+    if (a.document_id !== b.documentId) {
+      return String(a.document_id).localeCompare(String(b.documentId));
     }
 
-    return a.chunkIndex - b.chunkIndex;
+    return a.chunk_index - b.chunkIndex;
   });
 
   console.log("===== Final Context =====");
@@ -365,7 +365,7 @@ export async function retrieveContext(question: string) {
   
   console.log(
     uniqueExpanded.map((chunk: any) => ({
-      chunkIndex: chunk.chunkIndex,
+      chunkIndex: chunk.chunk_index,
     }))
   );
 
