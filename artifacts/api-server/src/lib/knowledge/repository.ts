@@ -22,7 +22,70 @@ export async function createDocument(
 }
 
 export async function listDocuments() {
-  return db.select().from(documentsTable);
+  const result = await db.execute(sql`
+    SELECT
+      d.id,
+      d.title,
+      d.file_name,
+      d.file_type,
+      d.category,
+      d.file_size,
+      d.created_at,
+      COUNT(dc.id)::int AS chunk_count
+    FROM documents d
+    LEFT JOIN document_chunks dc
+      ON d.id = dc.document_id
+    GROUP BY
+      d.id,
+      d.title,
+      d.file_name,
+      d.file_type,
+      d.category,
+      d.file_size,
+      d.created_at
+    ORDER BY d.created_at DESC;
+  `);
+
+  return result.rows;
+}
+export async function getDocumentById(documentId: string) {
+  const result = await db.execute(sql`
+    SELECT
+      d.id,
+      d.title,
+      d.file_name,
+      d.file_type,
+      d.category,
+      d.file_size,
+      d.storage_path,
+      d.created_at,
+      d.updated_at,
+      COUNT(dc.id)::int AS chunk_count
+    FROM documents d
+    LEFT JOIN document_chunks dc
+      ON d.id = dc.document_id
+    WHERE d.id = ${documentId}
+    GROUP BY
+      d.id,
+      d.title,
+      d.file_name,
+      d.file_type,
+      d.category,
+      d.file_size,
+      d.storage_path,
+      d.created_at,
+      d.updated_at;
+  `);
+
+  return result.rows[0] ?? null;
+}
+export async function deleteDocument(documentId: string) {
+  const [deleted] = await db
+    .delete(documentsTable)
+    .where(eq(documentsTable.id, documentId))
+    .returning();
+
+  return deleted;
 }
 
 /* -------------------------------------------------------------------------- */

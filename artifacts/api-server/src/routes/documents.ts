@@ -4,6 +4,8 @@ import {
   createDocument,
   createDocumentChunks,
   listDocuments,
+  getDocumentById,
+  deleteDocument,
 } from "../lib/knowledge/repository";
 import { extractPdfText } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
@@ -12,6 +14,7 @@ import { upload } from "../lib/knowledge/upload";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/authMiddleware";
 
+
 const documentsRouter = Router();
 
 documentsRouter.use(requireAuth);
@@ -19,9 +22,13 @@ documentsRouter.use(requireAuth);
 documentsRouter.get("/", async (_req, res, next) => {
   try {
     const documents = await listDocuments();
-    res.json(documents);
-  } catch (error) {
-    next(error);
+
+    res.json({
+      success: true,
+      documents,
+    });
+  } catch (err) {
+    next(err);
   }
 });
 documentsRouter.post(
@@ -48,10 +55,6 @@ documentsRouter.post(
         storagePath: req.file.path,
       });
       const text = await extractPdfText(req.file.path);
-      console.log(text.includes("minimum"));
-      console.log(text.includes("grade"));
-      console.log(text.includes("M20"));
-      console.log(text.length);
       const chunks = await chunkText(text);
       const index = text.toLowerCase().indexOf("m20");
 
@@ -106,4 +109,44 @@ documentsRouter.post(
     }
   }
 );
+documentsRouter.get("/:id", async (req, res, next) => {
+  try {
+    const document = await getDocumentById(req.params.id);
+
+    if (!document) {
+      res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      document,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+documentsRouter.delete("/:id", async (req, res, next) => {
+  try {
+    const deleted = await deleteDocument(req.params.id);
+
+    if (!deleted) {
+      res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Document deleted successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
       export default documentsRouter;
