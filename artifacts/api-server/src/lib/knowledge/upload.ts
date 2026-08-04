@@ -1,4 +1,5 @@
 import { extractPdfText } from "./extractor";
+import { randomUUID } from "crypto";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -14,9 +15,16 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
 
+
+
   filename: (_req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
+      const extension = path.extname(file.originalname);
+
+      cb(
+          null,
+          `${randomUUID()}${extension}`
+      );
+  }
 });
 
 export const upload = multer({

@@ -10,7 +10,7 @@ import {
 import { extractPdfText } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
-
+import { authorize } from "../middlewares/authMiddleware";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/authMiddleware";
 
@@ -33,8 +33,9 @@ documentsRouter.get("/", async (_req, res, next) => {
 });
 documentsRouter.post(
   "/upload",
+  authorize(["ADMIN", "INSPECTOR"]),
   upload.single("file"),
-  async (req, res, next): Promise<void> => {
+  async (req, res, next) => {
     try {
       if (!req.file) {
         res.status(400).json({
@@ -44,12 +45,33 @@ documentsRouter.post(
       }
 
       const userId = req.user!.id;
+      const allowedCategories = [
+        "Standard",
+        "Project Document",
+        "Report",
+        "Manual",
+        "Drawing",
+        "Other",
+      ] as const;
 
+      type DocumentCategory = (typeof allowedCategories)[number];
+
+      function getCategory(value: string): DocumentCategory {
+        if ((allowedCategories as readonly string[]).includes(value)) {
+          return value as DocumentCategory;
+        }
+
+        return "Other";
+      }
+      function getValue(value: string | string[] | undefined): string {
+        if (!value) return "";
+        return Array.isArray(value) ? value[0] : value;
+      }
       const document = await createDocument({
-        title: req.body.title,
+        title: getValue(req.body.title),
         fileName: req.file.originalname,
         fileType: req.file.mimetype,
-        category: req.body.category,
+        category: getCategory(getValue(req.body.category)),
         uploadedBy: userId,
         fileSize: req.file.size,
         storagePath: req.file.path,
@@ -129,9 +151,16 @@ documentsRouter.get("/:id", async (req, res, next) => {
     next(err);
   }
 });
-documentsRouter.delete("/:id", async (req, res, next) => {
+documentsRouter.delete(
+  "/:id",
+  authorize(["ADMIN"]),
+  async (req, res, next) => {
   try {
-    const deleted = await deleteDocument(req.params.id);
+    const documentId = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+
+    const deleted = await deleteDocument(documentId);
 
     if (!deleted) {
       res.status(404).json({
