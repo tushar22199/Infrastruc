@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { retrieveContext } from "../lib/knowledge/retriever";
 import { embedDocument } from "../lib/knowledge/embedder";
 import {
@@ -78,28 +79,21 @@ documentsRouter.post(
       });
       const text = await extractPdfText(req.file.path);
       const chunks = await chunkText(text);
-      const index = text.toLowerCase().indexOf("m20");
-
-      if (index !== -1) {
-        console.log(
-          text.substring(
-            Math.max(0, index - 300),
-            index + 300
-          )
-        );
-      }
       await createDocumentChunks(document.id, chunks);
+      logger.info(
+        {
+          documentId: document.id,
+          uploadedBy: userId,
+          chunkCount: chunks.length,
+          fileSize: req.file.size,
+        },
+        "Document processed successfully"
+      );
 
       // Run embedding in the background
       void embedDocument(document.id).catch((err) => {
         console.error("Embedding failed:", err);
       });
-
-      console.log("Saved chunks:", chunks.length);
-      console.log("Extracted characters:", text.length);
-      console.log("Chunks created:", chunks.length);
-      console.log("First chunk:");
-            console.log(chunks[0]);
 
             res.status(201).json(document);
           } catch (err) {

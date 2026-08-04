@@ -1,4 +1,5 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { logger } from "../logger";
+import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import {
   db,
@@ -9,7 +10,7 @@ import {
 /* -------------------------------------------------------------------------- */
 /*                               Document CRUD                                */
 /* -------------------------------------------------------------------------- */
-
+const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 export async function createDocument(
   document: typeof documentsTable.$inferInsert
 ) {
@@ -196,17 +197,27 @@ export async function searchKeywordChunks(
   ORDER BY score DESC
   LIMIT ${limit};
 `);
-  console.log("\n===== FTS Query =====");
-  console.log(searchText);
-  console.log(`Returned ${result.rows.length} rows`);
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        searchText,
+        returnedRows: result.rows.length,
+      },
+      "FTS search"
+    );
+  }
 
-  console.table(
-    result.rows.map((row: any) => ({
-      chunk: row.chunk_index,
-      score: Number(row.score).toFixed(5),
-      preview: row.content.substring(0, 80).replace(/\n/g, " "),
-    }))
-  );
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        results: result.rows.map((row: any) => ({
+          chunk: row.chunk_index,
+          score: Number(row.score).toFixed(5),
+        })),
+      },
+      "Keyword search results"
+    );
+  }
 
  
 
@@ -240,10 +251,17 @@ export async function getNeighborChunks(
     ORDER BY dc.chunk_index;
   `);
 
-  console.log(
-    `Neighbors for chunk ${chunkIndex}:`,
-    result.rows.map((r: any) => r.chunk_index)
-  );
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        documentId,
+        chunkIndex,
+        window,
+        returnedRows: result.rows.length,
+      },
+      "Neighbor chunk search"
+    );
+  }
 
   return result.rows;
 }

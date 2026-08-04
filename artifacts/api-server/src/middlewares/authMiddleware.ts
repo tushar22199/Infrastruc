@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../lib/jwt";
 import type { JwtUser } from "../lib/jwt";
@@ -54,8 +55,7 @@ export async function authMiddleware(
   _res: Response,
   next: NextFunction,
 ) {
-  console.log("=== AUTH MIDDLEWARE ===");
-  console.log("Authorization:", req.headers.authorization);
+ 
 
   req.isAuthenticated = function () {
     return this.user !== undefined;
@@ -64,16 +64,18 @@ export async function authMiddleware(
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
-    console.log("No Bearer token");
     return next();
   }
 
   try {
     const token = authHeader.substring(7).trim();
     req.user = verifyToken(token);
-    console.log("Authenticated:", req.user.email);
   } catch (err) {
-    console.error("JWT Error:", err);
+    logger.warn(
+      { err },
+      "JWT verification failed"
+    );
+
     req.user = undefined;
   }
 

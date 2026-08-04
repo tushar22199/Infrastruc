@@ -39,19 +39,15 @@ app.use(
   cors({
     credentials: true,
     origin(origin, callback) {
-      console.log("Incoming origin:", origin);
-      console.log("Allowed origins:", allowedOrigins);
-
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      if (
-        origin.endsWith(".replit.dev") ||
-        origin.endsWith(".sisko.replit.dev")
-      ) {
-        return callback(null, true);
-      }
-      console.log("Blocked origin:", origin);
+
+      logger.warn(
+        { origin },
+        "Blocked CORS origin"
+      );
+
       return callback(new Error("Not allowed by CORS"));
     },
   })
@@ -77,7 +73,7 @@ const __dirname = path.dirname(__filename);
 
 const publicDir = path.resolve(__dirname, "../../field-inspector/dist/public");
 
-console.log("Serving frontend from:", publicDir);
+
 
 app.use(express.static(publicDir));
 

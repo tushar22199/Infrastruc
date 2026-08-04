@@ -14,6 +14,7 @@ import {
 
 import { Router } from "express";
 import OpenAI from "openai";
+import { logger } from "../lib/logger";
 
 const aiRouter = Router();
 aiRouter.use(requireAuth);
@@ -130,20 +131,21 @@ aiRouter.post("/chat", async (req, res) => {
       : [];
     
     const DEBUG_RAG = process.env.DEBUG_RAG === "true";
-    if (DEBUG_RAG) {
-    documentChunks.forEach((chunk, index) => {
-      console.log({
-        rank: index + 1,
-        id: chunk.id,
-        documentId: chunk.document_id,
-        chunkIndex: chunk.chunk_index,
-        page: chunk.page_number,
-      });
-      
 
-      console.log(chunk.content.substring(0, 300));
-      console.log("--------------------");
-    });
+    if (DEBUG_RAG) {
+      documentChunks.forEach((chunk, index) => {
+        logger.debug(
+          {
+            rank: index + 1,
+            id: chunk.id,
+            documentId: chunk.document_id,
+            chunkIndex: chunk.chunk_index,
+            page: chunk.page_number,
+            document: chunk.documentTitle,
+          },
+          "Retrieved RAG chunk"
+        );
+      });
     }
     const documentContext = documentChunks
       .map(

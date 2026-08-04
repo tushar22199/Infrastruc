@@ -1,3 +1,6 @@
+import { logger } from "../logger";
+
+const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 import { generateEmbedding } from "./embeddings";
 import {
   searchSimilarChunks,
@@ -114,11 +117,13 @@ export function extractSearchTerms(question: string) {
 
     return meaningfulWords.length >= 2;
   });
-  console.log("\n===== Keywords =====");
-  console.log(keywords);
+  if (DEBUG_RAG) {
+    logger.debug({ keywords }, "Extracted keywords");
+  }
 
-  console.log("===== Phrases =====");
-  console.log(phrases);
+  if (DEBUG_RAG) {
+    logger.debug({ phrases }, "Extracted phrases");
+  }
   return {
     keywords,
     phrases,
@@ -186,27 +191,29 @@ export async function retrieveContext(question: string) {
   // ----------------------------
   // Debug Logs
   // ----------------------------
-  console.log("===== Keywords =====");
-  console.log(keywords);
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        semanticResults: semanticChunks.map((chunk) => ({
+          chunkIndex: chunk.chunk_index,
+          distance: chunk.distance,
+        })),
+      },
+      "Semantic retrieval results"
+    );
+  }
 
-  console.log("===== Phrases =====");
-  console.log(phrases);
-
-  console.log("===== Semantic Results =====");
-  console.log(
-    semanticChunks.map((chunk: any) => ({
-      chunkIndex: chunk.chunk_index,
-      distance: chunk.distance,
-    }))
-  );
-
-  console.log("===== Keyword Results =====");
-  console.log(
-    keywordChunks.map((chunk: any) => ({
-      chunkIndex: chunk.chunk_index,
-      keywordScore: chunk.score,
-    }))
-  );
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        keywordResults: keywordChunks.map((chunk: any) => ({
+          chunkIndex: chunk.chunk_index,
+          score: chunk.score,
+        })),
+      },
+      "Keyword retrieval results"
+    );
+  }
 
   // ----------------------------
   // Rank by combined score
@@ -214,17 +221,18 @@ export async function retrieveContext(question: string) {
   const rankedChunks = [...scored.values()].sort(
     (a, b) => b.score - a.score
   );
-  console.log("\n===== RRF Ranking =====");
-
-  rankedChunks.slice(0, 10).forEach((chunk: any, index: number) => {
-    console.log({
-      rank: index + 1,
-      chunkIndex: chunk.chunk_index,
-      score: chunk.score.toFixed(5),
-      semanticRank: chunk.semanticRank ?? "-",
-      keywordRank: chunk.keywordRank ?? "-",
-    });
-  });
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        ranking: rankedChunks.slice(0, 10).map((chunk: any, index: number) => ({
+          rank: index + 1,
+          chunkIndex: chunk.chunk_index,
+          score: chunk.score,
+        })),
+      },
+      "RRF ranking"
+    );
+  }
   // ----------------------------
   // Lexical Re-ranking
   // ----------------------------
@@ -286,17 +294,23 @@ export async function retrieveContext(question: string) {
   // Re-sort after applying bonuses
   rankedChunks.sort((a, b) => b.score - a.score);
 
-  console.log("\n===== After Lexical Re-ranking =====");
+  if (DEBUG_RAG) {
+    logger.debug("After lexical reranking");
+  }
 
-  console.table(
-    rankedChunks.slice(0, 10).map((chunk: any) => ({
-      chunk: chunk.chunk_index,
-      score: chunk.score.toFixed(5),
-      semantic: chunk.semanticRank ?? "-",
-      keyword: chunk.keywordRank ?? "-",
-      preview: chunk.content.substring(0, 80).replace(/\n/g, " "),
-    }))
-  );
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        lexicalRanking: rankedChunks.slice(0, 10).map((chunk: any) => ({
+          chunk: chunk.chunk_index,
+          score: chunk.score.toFixed(5),
+          semantic: chunk.semanticRank ?? "-",
+          keyword: chunk.keywordRank ?? "-",
+        })),
+      },
+      "After lexical reranking"
+    );
+  }
 
   // ----------------------------
   // Remove duplicate chunks
@@ -319,14 +333,28 @@ export async function retrieveContext(question: string) {
   // Top chunks
   const topChunks = uniqueChunks.slice(0, 8);
 
-  console.log("===== Top Chunks =====");
-  console.log(
-    topChunks.map((chunk: any) => ({
-      chunkIndex: chunk.chunk_index,
-      score: chunk.score,
-    }))
-  );
-
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        topChunks: topChunks.map(chunk => ({
+          chunkIndex: chunk.chunk_index,
+          score: chunk.score,
+        })),
+      },
+      "Top retrieved chunks"
+    );
+  }
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        topChunks: topChunks.map((chunk: any) => ({
+          chunkIndex: chunk.chunk_index,
+          score: chunk.score,
+        })),
+      },
+      "Top retrieved chunks"
+    );
+  }
   // ----------------------------
   // Neighbor Expansion
   // ----------------------------
@@ -359,15 +387,19 @@ export async function retrieveContext(question: string) {
     return a.chunk_index - b.chunkIndex;
   });
 
-  console.log("===== Final Context =====");
-  
 
   
-  console.log(
-    uniqueExpanded.map((chunk: any) => ({
-      chunkIndex: chunk.chunk_index,
-    }))
-  );
+
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        expandedChunks: uniqueExpanded.map((chunk: any) => ({
+          chunkIndex: chunk.chunk_index,
+        })),
+      },
+      "Expanded neighbor chunks"
+    );
+  }
 
   const MAX_CONTEXT_CHARS = 12000;
 
@@ -383,8 +415,15 @@ export async function retrieveContext(question: string) {
     finalContext.push(chunk);
     totalChars += chunk.content.length;
   }
-  console.log("Final chunks:", finalContext.length);
-  console.log("Total chars:", totalChars);
+  if (DEBUG_RAG) {
+    logger.debug(
+      {
+        finalChunkCount: finalContext.length,
+        totalChars,
+      },
+      "Final RAG context"
+    );
+  }
 
 
   return finalContext;

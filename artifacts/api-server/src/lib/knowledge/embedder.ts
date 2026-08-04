@@ -1,3 +1,4 @@
+import { logger } from "../logger";
 import { generateEmbedding } from "./embeddings";
 import {
   getDocumentChunks,
@@ -6,18 +7,25 @@ import {
 
 export async function embedDocument(documentId: string) {
   const chunks = await getDocumentChunks(documentId);
-
-  console.log(`Embedding ${chunks.length} chunks...`);
+  logger.info(
+    {
+      chunkCount: chunks.length,
+      documentId,
+    },
+    "Starting document embedding"
+  );
+  
 
   for (const chunk of chunks) {
     const embedding = await generateEmbedding(chunk.content);
 
     await updateChunkEmbedding(chunk.id, embedding);
 
-    console.log(
-      `Embedded chunk ${chunk.chunkIndex + 1}/${chunks.length}`
-    );
+    
   }
-
-  console.log("Document embedding complete.");
+  logger.info(
+    { documentId },
+    "Document embedding completed"
+  );
+  
 }

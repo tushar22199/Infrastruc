@@ -20,8 +20,5 @@ export async function extractPdfText(filePath: string): Promise<string> {
 
   const text = normalizePdfText(result.text);
 
-  console.log("===== PDF TEXT PREVIEW =====");
-  console.log(text.slice(0, 3000));
-
   return text;
 }
