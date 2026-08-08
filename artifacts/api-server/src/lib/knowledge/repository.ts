@@ -184,16 +184,16 @@ export async function searchKeywordChunks(
     dc.chunk_index,
     dc.content,
     dc.page_number,
-    ts_rank(
-      to_tsvector('english', dc.content),
-      websearch_to_tsquery('english', ${searchText})
-    ) AS score
+     ts_rank(
+       to_tsvector('simple', dc.content),
+       websearch_to_tsquery('simple', ${searchText})
+     ) AS score
   FROM document_chunks dc
   JOIN documents d
     ON dc.document_id = d.id
   WHERE
-    to_tsvector('english', dc.content)
-    @@ websearch_to_tsquery('english', ${searchText})
+  to_tsvector('simple', dc.content)
+  @@ websearch_to_tsquery('simple', ${searchText})
   ORDER BY score DESC
   LIMIT ${limit};
 `);

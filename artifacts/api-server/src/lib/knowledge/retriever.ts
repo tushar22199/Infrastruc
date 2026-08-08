@@ -331,7 +331,7 @@ export async function retrieveContext(question: string) {
   });
 
   // Top chunks
-  const topChunks = uniqueChunks.slice(0, 8);
+  const topChunks = uniqueChunks.slice(0, 4  );
 
   if (DEBUG_RAG) {
     logger.debug(
@@ -364,7 +364,7 @@ export async function retrieveContext(question: string) {
     const neighbors = await getNeighborChunks(
       chunk.document_id as string,
       chunk.chunk_index as number,
-      3
+      1
     );
 
     expandedChunks.push(...neighbors);
