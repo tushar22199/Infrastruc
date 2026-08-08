@@ -5,12 +5,7 @@ import { InsightsSchema } from "@workspace/api-zod";
 import { aiLimiter } from "../middlewares/rateLimiter";
 import multer from "multer";
 import { requireAuth } from "../middlewares/authMiddleware";
-import {
-  getLatestInspections,
-  getCriticalInspections,
-  getActiveInspections,
-  getAllInspections,
-} from "../lib/ai/tools/inspection-tool";
+
 
 import { Router } from "express";
 import OpenAI from "openai";
@@ -129,7 +124,19 @@ aiRouter.post("/chat", async (req, res) => {
     const documentChunks = isEngineeringQuestion
       ? await retrieveContext(question)
       : [];
-    
+    const sources = Array.from(
+      new Map(
+        documentChunks.map((chunk: any) => [
+          `${chunk.document_id}:${chunk.page_number}:${chunk.chunk_index}`,
+          {
+            documentId: chunk.document_id,
+            document: chunk.documentTitle,
+            page: chunk.page_number,
+            chunkIndex: chunk.chunk_index,
+          },
+        ])
+      ).values()
+    );
     const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 
     if (DEBUG_RAG) {
@@ -400,6 +407,7 @@ Requirements:
 
     res.json({
       reply: response.choices[0].message.content,
+      sources,
     });
     } catch (err) {
       console.error(err);
