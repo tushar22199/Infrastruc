@@ -176,6 +176,14 @@ export async function searchKeywordChunks(
   if (!searchText.trim()) {
     return [];
   }
+  logger.info(
+    {
+      searchText,
+      keywords,
+      phrases,
+    },
+    "FTS input"
+  );
   const result = await db.execute(sql`
     SELECT
     dc.id,
@@ -197,6 +205,16 @@ export async function searchKeywordChunks(
   ORDER BY score DESC
   LIMIT ${limit};
 `);
+  logger.info(
+    {
+      returnedRows: result.rows.length,
+      firstChunk:
+        result.rows.length > 0
+          ? result.rows[0].chunk_index
+          : null,
+    },
+    "FTS output"
+  );
   if (DEBUG_RAG) {
     logger.debug(
       {
