@@ -168,10 +168,7 @@ export async function searchKeywordChunks(
   phrases: string[],
   limit = 20
 ) {
-  const searchText = [
-    ...phrases.slice(0, 3).map((p) => `"${p}"`),
-    ...keywords,
-  ].join(" ");
+  const searchText = keywords.join(" ");
 
   if (!searchText.trim()) {
     return [];
