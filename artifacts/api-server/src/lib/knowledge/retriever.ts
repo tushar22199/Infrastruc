@@ -250,42 +250,45 @@ export async function retrieveContext(question: string) {
 
     for (const term of IMPORTANT_TERMS) {
       if (text.includes(term)) {
-        bonus += 0.005;
+        bonus += 0.002;
       }
     }
 
+    // Exact phrase match
     for (const phrase of phrases) {
       if (text.includes(phrase.toLowerCase())) {
-        bonus += 0.03;
+        bonus += 0.01;
       }
     }
 
-    // Engineering-specific boosts
+    // Engineering-specific hints
     if (text.includes("table")) {
-      bonus += 0.02;
+      bonus += 0.005;
     }
 
     if (text.includes("clause")) {
-      bonus += 0.02;
+      bonus += 0.005;
     }
 
     if (text.includes("figure")) {
-      bonus += 0.01;
+      bonus += 0.003;
     }
 
     if (text.includes("note")) {
-      bonus += 0.01;
+      bonus += 0.003;
     }
+
     if (/table\s+\d+/i.test(text)) {
-      bonus += 0.05;
+      bonus += 0.01;
     }
 
     if (/clause\s+\d+(\.\d+)*/i.test(text)) {
-      bonus += 0.03;
+      bonus += 0.01;
     }
 
+    // Grade references (M20, M25, etc.)
     if (/m\d+/i.test(text)) {
-      bonus += 0.03;
+      bonus += 0.005;
     }
 
     chunk.score += bonus;
