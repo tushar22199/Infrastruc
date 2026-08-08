@@ -291,6 +291,7 @@ export async function retrieveContext(question: string) {
       bonus += 0.005;
     }
 
+    bonus = Math.min(bonus, 0.015);
     chunk.score += bonus;
   }
 
