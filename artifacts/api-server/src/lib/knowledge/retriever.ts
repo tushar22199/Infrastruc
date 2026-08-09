@@ -1,5 +1,5 @@
 import { logger } from "../logger";
-
+import { rankChunks } from "../ai/ranking";
 const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 import { generateEmbedding } from "./embeddings";
 import {
@@ -129,9 +129,7 @@ export function extractSearchTerms(question: string) {
     phrases,
   };
 }
-function rrf(rank: number, k = 60): number {
-  return 1 / (k + rank);
-}
+
 export async function retrieveContext(question: string) {
   const embedding = await generateEmbedding(question);
 
@@ -151,75 +149,11 @@ export async function retrieveContext(question: string) {
   // ----------------------------
   // Hybrid Scoring (RRF)
   // ----------------------------
-  const scored = new Map<
-    string,
-    (typeof semanticChunks)[number] & {
-      score: number;
-      semanticRank?: number;
-      keywordRank?: number;
-    }
-  >();
-  const SEMANTIC_WEIGHT = 0.7;
-  const KEYWORD_WEIGHT = 1.3;
-  // Semantic ranking
-  semanticChunks.forEach((chunk, index) => {
-    scored.set(chunk.id as string, {
-      ...chunk,
-      score: rrf(index + 1) * SEMANTIC_WEIGHT,
-      semanticRank: index + 1,
-    });
-  });
-
-  // Keyword ranking
-  keywordChunks.forEach((chunk: any, index: number) => {
-    const id = chunk.id as string;
-
-    if (scored.has(id)) {
-      const existing = scored.get(id)!;
-
-      existing.score += rrf(index + 1) * KEYWORD_WEIGHT;
-      existing.keywordRank = index + 1;
-    } else {
-      scored.set(id, {
-        ...chunk,
-        score: rrf(index + 1) * KEYWORD_WEIGHT,
-        keywordRank: index + 1,
-      });
-    }
-  });
-
-  // ----------------------------
-  // Debug Logs
-  // ----------------------------
-  if (DEBUG_RAG) {
-    logger.debug(
-      {
-        semanticResults: semanticChunks.map((chunk) => ({
-          chunkIndex: chunk.chunk_index,
-          distance: chunk.distance,
-        })),
-      },
-      "Semantic retrieval results"
-    );
-  }
-
-  if (DEBUG_RAG) {
-    logger.debug(
-      {
-        keywordResults: keywordChunks.map((chunk: any) => ({
-          chunkIndex: chunk.chunk_index,
-          score: chunk.score,
-        })),
-      },
-      "Keyword retrieval results"
-    );
-  }
-
-  // ----------------------------
-  // Rank by combined score
-  // ----------------------------
-  const rankedChunks = [...scored.values()].sort(
-    (a, b) => b.score - a.score
+  const rankedChunks = rankChunks(
+    semanticChunks,
+    keywordChunks,
+    keywords,
+    phrases
   );
   if (DEBUG_RAG) {
     logger.debug(
@@ -348,17 +282,7 @@ export async function retrieveContext(question: string) {
       "Top retrieved chunks"
     );
   }
-  if (DEBUG_RAG) {
-    logger.debug(
-      {
-        topChunks: topChunks.map((chunk: any) => ({
-          chunkIndex: chunk.chunk_index,
-          score: chunk.score,
-        })),
-      },
-      "Top retrieved chunks"
-    );
-  }
+
   // ----------------------------
   // Neighbor Expansion
   // ----------------------------
@@ -384,11 +308,13 @@ export async function retrieveContext(question: string) {
   );
 
   uniqueExpanded.sort((a: any, b: any) => {
-    if (a.document_id !== b.documentId) {
-      return String(a.document_id).localeCompare(String(b.documentId));
+    if (a.document_id !== b.document_id) {
+      return String(a.document_id).localeCompare(
+        String(b.document_id)
+      );
     }
 
-    return a.chunk_index - b.chunkIndex;
+    return a.chunk_index - b.chunk_index;
   });
 
 
