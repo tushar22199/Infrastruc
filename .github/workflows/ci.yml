@@ -34,6 +34,9 @@ jobs:
       - name: TypeScript typecheck
         run: pnpm run typecheck
 
+      - name: Run unit tests
+        run: pnpm --filter @workspace/api-server test
+
       - name: Build project
         run: pnpm run build
 
