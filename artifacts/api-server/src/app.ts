@@ -19,6 +19,7 @@ app.set("trust proxy", 1);
 app.use(
   pinoHttp({
     logger,
+    level: process.env.NODE_ENV === "test" ? "silent" : undefined,
     serializers: {
       req(req) {
         return {
