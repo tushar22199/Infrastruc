@@ -222,4 +222,85 @@ describe("retrieveContext", () => {
     expect(totalChars).toBeLessThanOrEqual(12000);
     expect(result).toHaveLength(2);
   });
+  it("handles neighbor expansion at the start of a document", async () => {
+    vi.mocked(searchSimilarChunks).mockResolvedValue([
+      {
+        id: "first",
+        document_id: "doc-1",
+        chunk_index: 0,
+        content: "First chunk",
+      },
+    ]);
+
+    vi.mocked(searchKeywordChunks).mockResolvedValue([]);
+
+    vi.mocked(getNeighborChunks).mockResolvedValue([
+      {
+        id: "first",
+        document_id: "doc-1",
+        chunk_index: 0,
+        content: "First chunk",
+      },
+      {
+        id: "second",
+        document_id: "doc-1",
+        chunk_index: 1,
+        content: "Second chunk",
+      },
+    ]);
+
+    const result = await retrieveContext("first chunk");
+
+    expect(getNeighborChunks).toHaveBeenCalledWith(
+      "doc-1",
+      0,
+      1
+    );
+
+    expect(result.map((chunk) => chunk.chunk_index)).toEqual([
+      0,
+      1,
+    ]);
+  });
+
+  it("handles neighbor expansion at the end of a document", async () => {
+    vi.mocked(searchSimilarChunks).mockResolvedValue([
+      {
+        id: "last",
+        document_id: "doc-1",
+        chunk_index: 99,
+        content: "Last chunk",
+      },
+    ]);
+
+    vi.mocked(searchKeywordChunks).mockResolvedValue([]);
+
+    vi.mocked(getNeighborChunks).mockResolvedValue([
+      {
+        id: "previous",
+        document_id: "doc-1",
+        chunk_index: 98,
+        content: "Previous chunk",
+      },
+      {
+        id: "last",
+        document_id: "doc-1",
+        chunk_index: 99,
+        content: "Last chunk",
+      },
+    ]);
+
+    const result = await retrieveContext("last chunk");
+
+    expect(getNeighborChunks).toHaveBeenCalledWith(
+      "doc-1",
+      99,
+      1
+    );
+
+    expect(result.map((chunk) => chunk.chunk_index)).toEqual([
+      98,
+      99,
+    ]);
+  });
 });

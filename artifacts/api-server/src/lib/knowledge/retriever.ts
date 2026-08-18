@@ -252,7 +252,7 @@ export async function retrieveContext(question: string) {
 
   let totalChars = 0;
  
-  const finalContext = [];
+  const finalContext: any[] = [];
 
   for (const chunk of uniqueExpanded) {
     if (totalChars + chunk.content.length > MAX_CONTEXT_CHARS) {
