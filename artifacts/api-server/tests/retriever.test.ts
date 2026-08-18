@@ -178,4 +178,48 @@ describe("retrieveContext", () => {
     expect(generateEmbedding).toHaveBeenCalledOnce();
     expect(result).toEqual([]);
   });
+
+  it("limits the final context to 12000 characters", async () => {
+    vi.mocked(searchSimilarChunks).mockResolvedValue([
+      {
+        id: "large-1",
+        document_id: "doc-1",
+        chunk_index: 1,
+        content: "seed",
+      },
+    ]);
+
+    vi.mocked(searchKeywordChunks).mockResolvedValue([]);
+
+    vi.mocked(getNeighborChunks).mockResolvedValue([
+      {
+        id: "large-1",
+        document_id: "doc-1",
+        chunk_index: 1,
+        content: "A".repeat(5000),
+      },
+      {
+        id: "large-2",
+        document_id: "doc-1",
+        chunk_index: 2,
+        content: "B".repeat(5000),
+      },
+      {
+        id: "large-3",
+        document_id: "doc-1",
+        chunk_index: 3,
+        content: "C".repeat(5000),
+      },
+    ]);
+
+    const result = await retrieveContext("large engineering document");
+
+    const totalChars = result.reduce(
+      (total, chunk) => total + chunk.content.length,
+      0
+    );
+
+    expect(totalChars).toBeLessThanOrEqual(12000);
+    expect(result).toHaveLength(2);
+  });
 });
