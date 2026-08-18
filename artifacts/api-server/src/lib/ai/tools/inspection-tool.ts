@@ -1,36 +1,11 @@
-import { db, inspectionsTable } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
-
-export async function getLatestInspections(limit = 20) {
-  return db
-    .select()
-    .from(inspectionsTable)
-    .orderBy(desc(inspectionsTable.createdAt))
-    .limit(limit);
-}
-
-export async function getCriticalInspections() {
-  return db
-    .select()
-    .from(inspectionsTable)
-    .where(eq(inspectionsTable.severity, "Critical"))
-    .orderBy(desc(inspectionsTable.createdAt));
-}
-
-export async function getActiveInspections() {
-  return db
-    .select()
-    .from(inspectionsTable)
-    .where(eq(inspectionsTable.status, "Active"))
-    .orderBy(desc(inspectionsTable.createdAt));
-}
 import type { Tool } from "../tool-types";
+import { retrieveRelevantInspections } from "../retriever/inspection-retriever";
 
-const inspectionAgent: Tool = {
+const inspectionTool: Tool = {
   name: "inspection",
 
   description:
-    "Retrieve inspections, critical issues, active inspections and recent inspections.",
+    "Retrieve infrastructure inspections using issue type, status, severity, latest, and report filters.",
 
   canHandle(question: string) {
     const q = question.toLowerCase();
@@ -40,45 +15,31 @@ const inspectionAgent: Tool = {
       q.includes("critical") ||
       q.includes("active") ||
       q.includes("latest") ||
-      q.includes("report")
+      q.includes("recent") ||
+      q.includes("report") ||
+      q.includes("summary") ||
+      q.includes("audit") ||
+      q.includes("maintenance") ||
+      q.includes("bridge") ||
+      q.includes("road") ||
+      q.includes("pavement") ||
+      q.includes("drain") ||
+      q.includes("drainage") ||
+      q.includes("structural") ||
+      q.includes("sign") ||
+      q.includes("erosion") ||
+      q.includes("utility")
     );
   },
 
   async execute(question: string) {
-    const q = question.toLowerCase();
-
-    if (q.includes("critical")) {
-      return {
-        tool: "inspection",
-        data: await getCriticalInspections(),
-      };
-    }
-
-    if (q.includes("active")) {
-      return {
-        tool: "inspection",
-        data: await getActiveInspections(),
-      };
-    }
-    if (q.includes("report")) {
-      return {
-        tool: "inspection",
-        data: await getAllInspections(),
-      };
-    }
+    const data = await retrieveRelevantInspections(question);
 
     return {
       tool: "inspection",
-      data: await getLatestInspections(),
+      data,
     };
-    
   },
 };
-export async function getAllInspections() {
-  return db
-    .select()
-    .from(inspectionsTable)
-    .orderBy(desc(inspectionsTable.createdAt));
-}
 
-export default inspectionAgent;
+export default inspectionTool;

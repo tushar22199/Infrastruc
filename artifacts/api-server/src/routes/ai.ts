@@ -1,5 +1,5 @@
+import { executeTool } from "../lib/ai/tool-executor";
 import { retrieveContext } from "../lib/knowledge/retriever";
-import { retrieveRelevantInspections } from "../lib/ai/retriever/inspection-retriever";
 import { validate } from "../middlewares/validate";
 import { InsightsSchema } from "@workspace/api-zod";
 import { aiLimiter } from "../middlewares/rateLimiter";
@@ -117,9 +117,14 @@ aiRouter.post("/chat", async (req, res) => {
         question
       );
 
-    const inspections = isInspectionQuestion
-      ? await retrieveRelevantInspections(question)
-      : [];
+    const toolResult = isInspectionQuestion
+      ? await executeTool(question)
+      : null;
+
+    const inspections =
+      toolResult?.tool === "inspection"
+        ? (toolResult.data as any[])
+        : [];
 
     const documentChunks = isEngineeringQuestion
       ? await retrieveContext(question)

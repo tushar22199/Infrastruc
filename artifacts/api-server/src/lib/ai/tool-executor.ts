@@ -1,22 +1,11 @@
 import { tools } from "./tool-registry";
 
 export async function executeTool(question: string) {
-  const q = question.toLowerCase();
+  const tool = tools.find((tool) => tool.canHandle(question));
 
-  // Temporary routing logic
-  if (
-    q.includes("inspection") ||
-    q.includes("critical") ||
-    q.includes("active")
-  ) {
-    const tool = tools.find((t) => t.name === "inspection");
-
-    if (!tool) {
-      throw new Error("Inspection tool not found.");
-    }
-
-    return tool.execute(question);
+  if (!tool) {
+    return null;
   }
 
-  return null;
+  return tool.execute(question);
 }
