@@ -40,6 +40,7 @@ vi.mock("../src/middlewares/validate", () => ({
 
 vi.mock("@workspace/api-zod", () => ({
   InsightsSchema: {},
+  ChatSchema: {},
 }));
 
 vi.mock("../src/lib/logger", () => ({

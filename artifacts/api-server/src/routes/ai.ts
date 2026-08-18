@@ -1,7 +1,7 @@
 import { executeTool } from "../lib/ai/tool-executor";
 import { retrieveContext } from "../lib/knowledge/retriever";
 import { validate } from "../middlewares/validate";
-import { InsightsSchema } from "@workspace/api-zod";
+import { ChatSchema, InsightsSchema } from "@workspace/api-zod";
 import { aiLimiter } from "../middlewares/rateLimiter";
 import multer from "multer";
 import { requireAuth } from "../middlewares/authMiddleware";
@@ -85,7 +85,7 @@ Generate:
     });
   }
 });
-aiRouter.post("/chat", async (req, res) => {
+aiRouter.post("/chat", validate(ChatSchema), async (req, res) => {
   try {
     const { messages } = req.body;
 
