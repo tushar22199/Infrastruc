@@ -189,4 +189,49 @@ describe("POST /chat - combined inspection + RAG", () => {
 
     expect(mocks.retrieveContext).not.toHaveBeenCalled();
   });
+  it("returns a 500 response when the AI provider fails", async () => {
+    mocks.create.mockRejectedValueOnce(
+      new Error("AI provider unavailable")
+    );
+
+    const response = await request(app)
+      .post("/ai/chat")
+      .send({
+        messages: [
+          {
+            role: "user",
+            content: "Explain bridge inspection procedures",
+          },
+        ],
+      });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      reply: "Sorry, something went wrong.",
+    });
+  });
+
+  it("returns a 500 response when the inspection tool fails", async () => {
+    mocks.executeTool.mockRejectedValueOnce(
+      new Error("Inspection database unavailable")
+    );
+
+    const response = await request(app)
+      .post("/ai/chat")
+      .send({
+        messages: [
+          {
+            role: "user",
+            content: "Show me critical inspections",
+          },
+        ],
+      });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      reply: "Sorry, something went wrong.",
+    });
+
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
 });
