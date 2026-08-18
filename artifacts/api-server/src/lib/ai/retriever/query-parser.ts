@@ -18,17 +18,21 @@ export function parseQuery(question: string): QueryFilters {
   const filters: QueryFilters = {};
 
   // Issue Type
-  for (const [issueType, synonyms] of Object.entries(issueTypeSynonyms)) {
-    if (
-      synonyms.some((term) =>
-        q.includes(term.toLowerCase())
-      )
-    ) {
-      filters.issueType = issueType;
-      break;
-    }
-  }
+  const issueTypeMatches = Object.entries(issueTypeSynonyms)
+    .flatMap(([issueType, synonyms]) =>
+      synonyms
+        .filter((term) => q.includes(term.toLowerCase()))
+        .map((term) => ({
+          issueType,
+          term,
+          length: term.length,
+        }))
+    )
+    .sort((a, b) => b.length - a.length);
 
+  if (issueTypeMatches.length > 0) {
+    filters.issueType = issueTypeMatches[0].issueType;
+  }
   // Status
   const status = statusEnum.find((value) =>
     q.includes(value.toLowerCase())
