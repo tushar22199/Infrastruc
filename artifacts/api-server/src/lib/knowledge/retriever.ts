@@ -267,18 +267,29 @@ export async function retrieveContext(question: string) {
   // ----------------------------
   // Neighbor Expansion
   // ----------------------------
+
   const expandedChunks: any[] = [];
 
   for (const chunk of topChunks) {
+    // Keep the original ranked chunk first.
+    expandedChunks.push(chunk);
+
     const neighbors = await getNeighborChunks(
       chunk.document_id as string,
       chunk.chunk_index as number,
       1
     );
 
-    expandedChunks.push(...neighbors);
+    for (const neighbor of neighbors) {
+      expandedChunks.push({
+        ...neighbor,
+        parentScore: chunk.score,
+        parentChunkIndex: chunk.chunk_index,
+      });
+    }
   }
 
+  // Remove duplicate chunks while preserving ranked order.
   const uniqueExpanded = Array.from(
     new Map(
       expandedChunks.map((chunk: any) => [
@@ -288,54 +299,78 @@ export async function retrieveContext(question: string) {
     ).values()
   );
 
+  // Rank expanded context around the original retrieval score.
+  // Original chunks stay ahead of their neighbors.
   uniqueExpanded.sort((a: any, b: any) => {
-    if (a.document_id !== b.document_id) {
-      return String(a.document_id).localeCompare(
-        String(b.document_id)
-      );
-    }
+    const scoreA =
+      typeof a.score === "number"
+        ? a.score
+        : typeof a.parentScore === "number"
+          ? a.parentScore - 0.001
+          : 0;
 
-    return a.chunk_index - b.chunk_index;
+    const scoreB =
+      typeof b.score === "number"
+        ? b.score
+        : typeof b.parentScore === "number"
+          ? b.parentScore - 0.001
+          : 0;
+
+    return scoreB - scoreA;
   });
-
-
-  
 
   if (DEBUG_RAG) {
     logger.debug(
       {
         expandedChunks: uniqueExpanded.map((chunk: any) => ({
           chunkIndex: chunk.chunk_index,
+          score: chunk.score,
+          parentScore: chunk.parentScore,
+          parentChunkIndex: chunk.parentChunkIndex,
         })),
       },
       "Expanded neighbor chunks"
     );
   }
 
+  // ----------------------------
+  // Build final context
+  // ----------------------------
+
   const MAX_CONTEXT_CHARS = 12000;
 
   let totalChars = 0;
- 
   const finalContext: any[] = [];
 
   for (const chunk of uniqueExpanded) {
-    if (totalChars + chunk.content.length > MAX_CONTEXT_CHARS) {
-      break;
+    if (
+      totalChars + String(chunk.content ?? "").length >
+      MAX_CONTEXT_CHARS
+    ) {
+      continue;
     }
 
     finalContext.push(chunk);
-    totalChars += chunk.content.length;
+    totalChars += String(chunk.content ?? "").length;
   }
+
   if (DEBUG_RAG) {
     logger.debug(
       {
         finalChunkCount: finalContext.length,
         totalChars,
+        finalRanking: finalContext.map(
+          (chunk: any, index: number) => ({
+            rank: index + 1,
+            chunkIndex: chunk.chunk_index,
+            score: chunk.score,
+            parentScore: chunk.parentScore,
+          })
+        ),
       },
       "Final RAG context"
     );
   }
 
-
   return finalContext;
-}
+  }

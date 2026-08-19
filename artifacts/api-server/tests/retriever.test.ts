@@ -121,8 +121,8 @@ describe("retrieveContext", () => {
     );
 
     expect(result.map((chunk) => chunk.chunk_index)).toEqual([
-      9,
       10,
+      9,
       11,
     ]);
   });
@@ -299,8 +299,8 @@ describe("retrieveContext", () => {
     );
 
     expect(result.map((chunk) => chunk.chunk_index)).toEqual([
-      98,
       99,
+      98,
     ]);
   });
 });
