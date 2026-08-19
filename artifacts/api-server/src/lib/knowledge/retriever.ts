@@ -1,5 +1,5 @@
+import { rankStandardAwareChunks } from "../ai/standard-aware-ranking";
 import { logger } from "../logger";
-import { rankChunks } from "../ai/ranking";
 const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 import { generateEmbedding } from "./embeddings";
 import {
@@ -174,11 +174,12 @@ export async function retrieveContext(question: string) {
   // ----------------------------
   // Hybrid Scoring (RRF)
   // ----------------------------
-  const rankedChunks = rankChunks(
+  const rankedChunks = rankStandardAwareChunks(
     semanticChunks,
     keywordChunks,
     keywords,
-    phrases
+    phrases,
+    question
   );
   const requestedStandard = extractRequestedStandard(question);
 
