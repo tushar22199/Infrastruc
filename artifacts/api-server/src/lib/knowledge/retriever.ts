@@ -129,6 +129,31 @@ export function extractSearchTerms(question: string) {
     phrases,
   };
 }
+export function extractRequestedStandard(
+  question: string
+): string | null {
+  const normalized = question
+    .toUpperCase()
+    .replace(/[–—-]/g, " ");
+
+  const isMatch = normalized.match(/\bIS\s*(\d{3,5})\b/);
+
+  if (isMatch) {
+    return `IS ${isMatch[1]}`;
+  }
+
+  const ircMatch = normalized.match(/\bIRC\s*(\d{1,3})\b/);
+
+  if (ircMatch) {
+    return `IRC ${ircMatch[1]}`;
+  }
+
+  if (/\bMORTH\b/.test(normalized)) {
+    return "MoRTH";
+  }
+
+  return null;
+}
 
 export async function retrieveContext(question: string) {
   const embedding = await generateEmbedding(question);
@@ -155,6 +180,44 @@ export async function retrieveContext(question: string) {
     keywords,
     phrases
   );
+  const requestedStandard = extractRequestedStandard(question);
+
+  if (requestedStandard) {
+    const normalizedStandard = requestedStandard
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
+    for (const chunk of rankedChunks) {
+      const documentTitle = String(
+        chunk.documentTitle ?? ""
+      )
+        .toLowerCase()
+        .replace(/[-:]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (documentTitle.includes(normalizedStandard)) {
+        chunk.score += 0.05;
+      }
+    }
+
+    rankedChunks.sort((a, b) => b.score - a.score);
+
+    if (DEBUG_RAG) {
+      logger.debug(
+        {
+          requestedStandard,
+          matchedChunks: rankedChunks.filter((chunk: any) =>
+            String(chunk.documentTitle ?? "")
+              .toLowerCase()
+              .includes(normalizedStandard)
+          ).length,
+        },
+        "Standard-aware ranking"
+      );
+    }
+  }
   if (DEBUG_RAG) {
     logger.debug(
       {
