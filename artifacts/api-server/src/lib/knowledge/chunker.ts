@@ -5,6 +5,19 @@ const splitter = new RecursiveCharacterTextSplitter({
   chunkOverlap: 300,
 });
 
-export async function chunkText(text: string): Promise<string[]> {
-  return splitter.splitText(text);
+export type DocumentChunk = {
+  content: string;
+  pageNumber: number;
+};
+
+export async function chunkText(
+  text: string,
+  pageNumber: number
+): Promise<DocumentChunk[]> {
+  const chunks = await splitter.splitText(text);
+
+  return chunks.map((content) => ({
+    content,
+    pageNumber,
+  }));
 }
