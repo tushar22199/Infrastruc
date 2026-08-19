@@ -56,4 +56,44 @@ describe("standard-aware ranking", () => {
     expect(result[0].id).toBe("table-5");
     expect(result[0].content).toContain("M20");
   });
+  function applyQuestionIntentBoost(
+    chunks: any[],
+    question: string
+  ) {
+    const normalizedQuestion = question.toLowerCase();
+
+    const isMinimumGradeQuestion =
+      normalizedQuestion.includes("minimum grade") ||
+      normalizedQuestion.includes("minimum grade of concrete");
+
+    if (!isMinimumGradeQuestion) {
+      return chunks;
+    }
+
+    for (const chunk of chunks) {
+      const text = String(chunk.content ?? "").toLowerCase();
+
+      let bonus = 0;
+
+      if (text.includes("table 5")) {
+        bonus += 0.08;
+      }
+
+      if (text.includes("minimum grade")) {
+        bonus += 0.04;
+      }
+
+      if (text.includes("grade of concrete")) {
+        bonus += 0.03;
+      }
+
+      if (/\bm\d+\b/i.test(text)) {
+        bonus += 0.02;
+      }
+
+      chunk.score += bonus;
+    }
+
+    return chunks.sort((a: any, b: any) => b.score - a.score);
+  }
 });

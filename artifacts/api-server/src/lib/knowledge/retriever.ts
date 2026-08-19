@@ -1,12 +1,13 @@
 import { rankStandardAwareChunks } from "../ai/standard-aware-ranking";
 import { logger } from "../logger";
-const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 import { generateEmbedding } from "./embeddings";
 import {
   searchSimilarChunks,
   searchKeywordChunks,
   getNeighborChunks,
 } from "./repository";
+
+const DEBUG_RAG = process.env.DEBUG_RAG === "true";
 
 const STOP_WORDS = new Set([
   "what",
@@ -52,19 +53,17 @@ export function extractSearchTerms(question: string) {
     .split(/\s+/)
     .filter(Boolean);
 
-  // Keywords (remove stop words)
   const keywords = [
     ...new Set(
       rawWords.filter(
         (word) =>
           word.length > 2 &&
           !STOP_WORDS.has(word) &&
-          !/^\d+$/.test(word) // Remove pure numbers
+          !/^\d+$/.test(word)
       )
     ),
   ];
 
-  // Generate phrases from RAW words
   const rawPhrases = new Set<string>();
 
   // 2-word phrases
@@ -98,32 +97,28 @@ export function extractSearchTerms(question: string) {
   const phrases = [...rawPhrases].filter((phrase) => {
     const words = phrase.split(" ");
 
-    // Reject phrases that start with a stop word
     if (PHRASE_STOP_WORDS.has(words[0])) {
       return false;
     }
 
-    // Reject phrases made only of numbers
-    if (words.every((w) => /^\d+$/.test(w))) {
+    if (words.every((word) => /^\d+$/.test(word))) {
       return false;
     }
 
-    // Keep phrases with at least two non-stop-word terms
     const meaningfulWords = words.filter(
-      (w) =>
-        !PHRASE_STOP_WORDS.has(w) &&
-        !/^\d+$/.test(w)
+      (word) =>
+        !PHRASE_STOP_WORDS.has(word) &&
+        !/^\d+$/.test(word)
     );
 
     return meaningfulWords.length >= 2;
   });
-  if (DEBUG_RAG) {
-    logger.debug({ keywords }, "Extracted keywords");
-  }
 
   if (DEBUG_RAG) {
+    logger.debug({ keywords }, "Extracted keywords");
     logger.debug({ phrases }, "Extracted phrases");
   }
+
   return {
     keywords,
     phrases,
@@ -172,8 +167,9 @@ export async function retrieveContext(question: string) {
   );
 
   // ----------------------------
-  // Hybrid Scoring (RRF)
+  // Standard-aware hybrid ranking
   // ----------------------------
+
   const rankedChunks = rankStandardAwareChunks(
     semanticChunks,
     keywordChunks,
@@ -181,63 +177,34 @@ export async function retrieveContext(question: string) {
     phrases,
     question
   );
-  const requestedStandard = extractRequestedStandard(question);
 
-  if (requestedStandard) {
-    const normalizedStandard = requestedStandard
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
-
-    for (const chunk of rankedChunks) {
-      const documentTitle = String(
-        chunk.documentTitle ?? ""
-      )
-        .toLowerCase()
-        .replace(/[-:]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      if (documentTitle.includes(normalizedStandard)) {
-        chunk.score += 0.05;
-      }
-    }
-
-    rankedChunks.sort((a, b) => b.score - a.score);
-
-    if (DEBUG_RAG) {
-      logger.debug(
-        {
-          requestedStandard,
-          matchedChunks: rankedChunks.filter((chunk: any) =>
-            String(chunk.documentTitle ?? "")
-              .toLowerCase()
-              .includes(normalizedStandard)
-          ).length,
-        },
-        "Standard-aware ranking"
-      );
-    }
-  }
   if (DEBUG_RAG) {
     logger.debug(
       {
-        ranking: rankedChunks.slice(0, 10).map((chunk: any, index: number) => ({
-          rank: index + 1,
-          chunkIndex: chunk.chunk_index,
-          score: chunk.score,
-        })),
+        ranking: rankedChunks.slice(0, 10).map(
+          (chunk: any, index: number) => ({
+            rank: index + 1,
+            id: chunk.id,
+            document: chunk.documentTitle,
+            chunkIndex: chunk.chunk_index,
+            page: chunk.page_number,
+            score: chunk.score,
+            standardMatch: chunk.standardMatch,
+          })
+        ),
       },
-      "RRF ranking"
+      "Standard-aware RAG ranking"
     );
   }
+
   // ----------------------------
   // Remove duplicate chunks
   // ----------------------------
+
   const seen = new Set<string>();
 
   const uniqueChunks = rankedChunks.filter((chunk: any) => {
-    const key = chunk.content
+    const key = String(chunk.content ?? "")
       .replace(/\s+/g, " ")
       .trim();
 
@@ -249,16 +216,25 @@ export async function retrieveContext(question: string) {
     return true;
   });
 
-  // Top chunks
-  const topChunks = uniqueChunks.slice(0, 4  );
+  // ----------------------------
+  // Select top ranked chunks
+  // ----------------------------
+
+  const topChunks = uniqueChunks.slice(0, 4);
 
   if (DEBUG_RAG) {
     logger.debug(
       {
-        topChunks: topChunks.map(chunk => ({
-          chunkIndex: chunk.chunk_index,
-          score: chunk.score,
-        })),
+        topChunks: topChunks.map(
+          (chunk: any, index: number) => ({
+            rank: index + 1,
+            id: chunk.id,
+            chunkIndex: chunk.chunk_index,
+            page: chunk.page_number,
+            score: chunk.score,
+            standardMatch: chunk.standardMatch,
+          })
+        ),
       },
       "Top retrieved chunks"
     );
@@ -271,7 +247,7 @@ export async function retrieveContext(question: string) {
   const expandedChunks: any[] = [];
 
   for (const chunk of topChunks) {
-    // Keep the original ranked chunk first.
+    // Keep the original ranked chunk.
     expandedChunks.push(chunk);
 
     const neighbors = await getNeighborChunks(
@@ -289,7 +265,10 @@ export async function retrieveContext(question: string) {
     }
   }
 
-  // Remove duplicate chunks while preserving ranked order.
+  // ----------------------------
+  // Remove duplicate expanded chunks
+  // ----------------------------
+
   const uniqueExpanded = Array.from(
     new Map(
       expandedChunks.map((chunk: any) => [
@@ -299,8 +278,10 @@ export async function retrieveContext(question: string) {
     ).values()
   );
 
-  // Rank expanded context around the original retrieval score.
-  // Original chunks stay ahead of their neighbors.
+  // ----------------------------
+  // Rank expanded context
+  // ----------------------------
+
   uniqueExpanded.sort((a: any, b: any) => {
     const scoreA =
       typeof a.score === "number"
@@ -322,12 +303,14 @@ export async function retrieveContext(question: string) {
   if (DEBUG_RAG) {
     logger.debug(
       {
-        expandedChunks: uniqueExpanded.map((chunk: any) => ({
-          chunkIndex: chunk.chunk_index,
-          score: chunk.score,
-          parentScore: chunk.parentScore,
-          parentChunkIndex: chunk.parentChunkIndex,
-        })),
+        expandedChunks: uniqueExpanded.map(
+          (chunk: any) => ({
+            chunkIndex: chunk.chunk_index,
+            score: chunk.score,
+            parentScore: chunk.parentScore,
+            parentChunkIndex: chunk.parentChunkIndex,
+          })
+        ),
       },
       "Expanded neighbor chunks"
     );
@@ -343,15 +326,16 @@ export async function retrieveContext(question: string) {
   const finalContext: any[] = [];
 
   for (const chunk of uniqueExpanded) {
-    if (
-      totalChars + String(chunk.content ?? "").length >
-      MAX_CONTEXT_CHARS
-    ) {
+    const contentLength = String(
+      chunk.content ?? ""
+    ).length;
+
+    if (totalChars + contentLength > MAX_CONTEXT_CHARS) {
       continue;
     }
 
     finalContext.push(chunk);
-    totalChars += String(chunk.content ?? "").length;
+    totalChars += contentLength;
   }
 
   if (DEBUG_RAG) {
@@ -363,6 +347,7 @@ export async function retrieveContext(question: string) {
           (chunk: any, index: number) => ({
             rank: index + 1,
             chunkIndex: chunk.chunk_index,
+            page: chunk.page_number,
             score: chunk.score,
             parentScore: chunk.parentScore,
           })
@@ -373,4 +358,4 @@ export async function retrieveContext(question: string) {
   }
 
   return finalContext;
-  }
+}
