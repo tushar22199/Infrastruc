@@ -1,8 +1,6 @@
-import testRouter from "./test";
 import documentsRouter from "./documents";
 import aiRouter from "./ai";
 import { Router, type IRouter } from "express";
-import { requireAuth } from "../middlewares/authMiddleware";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import inspectionsRouter from "./inspections";
@@ -19,7 +17,6 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 
-//router.use(requireAuth);
 router.use("/ai", aiRouter);
 router.use("/documents", documentsRouter);
 router.use(inspectionsRouter);
