@@ -4,6 +4,7 @@ import request from "supertest";
 
 const mocks = vi.hoisted(() => ({
   executeTool: vi.fn(),
+  retrieveContext: vi.fn(),
   create: vi.fn(),
 }));
 
@@ -12,7 +13,7 @@ vi.mock("../src/lib/ai/tool-executor", () => ({
 }));
 
 vi.mock("../src/lib/knowledge/retriever", () => ({
-  retrieveContext: vi.fn().mockResolvedValue([]),
+  retrieveContext: mocks.retrieveContext,
 }));
 
 vi.mock("openai", () => ({
@@ -49,7 +50,7 @@ describe("POST /chat integration", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
+    mocks.retrieveContext.mockResolvedValue([]);
     app.use(express.json());
     app.use("/ai", aiRouter);
 
@@ -167,5 +168,29 @@ describe("POST /chat integration", () => {
     expect(response.status).toBe(200);
     expect(mocks.executeTool).not.toHaveBeenCalled();
     expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it("returns a 500 response when RAG retrieval fails", async () => {
+    mocks.retrieveContext.mockRejectedValueOnce(
+      new Error("RAG retrieval unavailable")
+    );
+
+    const response = await request(app)
+      .post("/ai/chat")
+      .send({
+        messages: [
+          {
+            role: "user",
+            content: "What IRC clause applies to bridge deck cracking?",
+          },
+        ],
+      });
+
+    expect(response.status).toBe(500);
+
+    expect(response.body).toEqual({
+      reply: "Sorry, something went wrong.",
+    });
+
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 });
