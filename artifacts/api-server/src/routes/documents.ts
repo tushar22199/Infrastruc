@@ -8,7 +8,7 @@ import {
   getDocumentById,
   deleteDocument,
 } from "../lib/knowledge/repository";
-import { extractPdfText } from "../lib/knowledge/extractor";
+import { extractPdfPages } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
 import { authorize } from "../middlewares/authMiddleware";
@@ -77,8 +77,16 @@ documentsRouter.post(
         fileSize: req.file.size,
         storagePath: req.file.path,
       });
-      const text = await extractPdfText(req.file.path);
-      const chunks = await chunkText(text);
+      const pages = await extractPdfPages(req.file.path);
+
+      const chunks = (
+        await Promise.all(
+          pages.map((page) =>
+            chunkText(page.text, page.pageNumber)
+          )
+        )
+      ).flat();
+
       await createDocumentChunks(document.id, chunks);
       logger.info(
         {
