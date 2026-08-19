@@ -95,7 +95,10 @@ export async function deleteDocument(documentId: string) {
 
 export async function createDocumentChunks(
   documentId: string,
-  chunks: string[]
+  chunks: {
+    content: string;
+    pageNumber: number;
+  }[]
 ) {
   if (!chunks.length) return;
 
@@ -103,8 +106,8 @@ export async function createDocumentChunks(
     chunks.map((chunk, index) => ({
       documentId,
       chunkIndex: index,
-      content: chunk,
-      pageNumber: null,
+      content: chunk.content,
+      pageNumber: chunk.pageNumber,
     }))
   );
 }
