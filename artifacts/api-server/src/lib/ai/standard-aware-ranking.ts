@@ -144,7 +144,57 @@ function applyQuestionIntentBoost(
     (a: any, b: any) => b.score - a.score
   );
 }
+function applyIS875IntentBoost(
+  chunks: any[],
+  question: string
+) {
+  const normalized = question.toLowerCase();
 
+  const is875 =
+    normalized.includes("is 875") ||
+    normalized.includes("is875");
+
+  if (!is875) {
+    return chunks;
+  }
+
+  const asksK2 =
+    normalized.includes("k2") ||
+    normalized.includes("k₂") ||
+    normalized.includes("terrain category") ||
+    normalized.includes("terrain-height");
+
+  const asksWindSpeed =
+    normalized.includes("wind speed") ||
+    normalized.includes("basic wind");
+
+  for (const chunk of chunks) {
+    const text = String(chunk.content ?? "").toLowerCase();
+
+    let bonus = 0;
+
+    if (asksK2) {
+      if (text.includes("k2")) bonus += 0.08;
+      if (text.includes("k₂")) bonus += 0.08;
+      if (text.includes("terrain-height")) bonus += 0.06;
+      if (text.includes("terrain height")) bonus += 0.06;
+      if (text.includes("terrain category")) bonus += 0.05;
+      if (text.includes("table 2")) bonus += 0.10;
+    }
+
+    if (asksWindSpeed) {
+      if (text.includes("basic wind speed")) bonus += 0.06;
+      if (text.includes("wind speed map")) bonus += 0.06;
+      if (text.includes("figure 1")) bonus += 0.04;
+    }
+
+    chunk.score += bonus;
+  }
+
+  return chunks.sort(
+    (a: any, b: any) => b.score - a.score
+  );
+}
 export function rankStandardAwareChunks(
   semanticChunks: any[],
   keywordChunks: any[],
@@ -166,8 +216,13 @@ export function rankStandardAwareChunks(
     standard
   );
 
-  return applyQuestionIntentBoost(
+  const questionRanked = applyQuestionIntentBoost(
     standardRanked,
+    question
+  );
+
+  return applyIS875IntentBoost(
+    questionRanked,
     question
   );
 }

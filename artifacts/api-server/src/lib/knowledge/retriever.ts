@@ -220,7 +220,7 @@ export async function retrieveContext(question: string) {
   // Select top ranked chunks
   // ----------------------------
 
-  const topChunks = uniqueChunks.slice(0, 4);
+  const topChunks = uniqueChunks.slice(0, 8);
 
   if (DEBUG_RAG) {
     logger.debug(
@@ -253,7 +253,7 @@ export async function retrieveContext(question: string) {
     const neighbors = await getNeighborChunks(
       chunk.document_id as string,
       chunk.chunk_index as number,
-      1
+      2
     );
 
     for (const neighbor of neighbors) {
