@@ -110,6 +110,36 @@ documentsRouter.post(
         },
       );
 documentsRouter.post(
+  "/repair-is875-embeddings",
+  authorize(["ADMIN"]),
+  async (_req, res, next) => {
+    try {
+      const documentId = "02038ff4-6356-4ac1-95d8-0a825145493f";
+
+      logger.info(
+        { documentId },
+        "Starting IS 875 embedding repair"
+      );
+
+      void embedDocument(documentId).catch((err) => {
+        logger.error(
+          { err, documentId },
+          "IS 875 embedding repair failed"
+        );
+      });
+
+      res.status(202).json({
+        success: true,
+        message: "IS 875 embedding repair started",
+        documentId,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+documentsRouter.post(
   "/search",
   async (req, res, next): Promise<void> => {
     try {
