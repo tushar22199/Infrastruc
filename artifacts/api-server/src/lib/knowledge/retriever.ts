@@ -170,13 +170,30 @@ export async function retrieveContext(question: string) {
   // Standard-aware hybrid ranking
   // ----------------------------
 
-  const rankedChunks = rankStandardAwareChunks(
+  const requestedStandard = extractRequestedStandard(question);
+
+  let rankedChunks = rankStandardAwareChunks(
     semanticChunks,
     keywordChunks,
     keywords,
     phrases,
     question
   );
+
+  if (requestedStandard) {
+    const standardFiltered = rankedChunks.filter((chunk: any) => {
+      const title = String(chunk.documentTitle ?? "")
+        .toUpperCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return title.includes(requestedStandard.toUpperCase());
+    });
+
+    if (standardFiltered.length > 0) {
+      rankedChunks = standardFiltered;
+    }
+  }
 
   if (DEBUG_RAG) {
     logger.debug(
