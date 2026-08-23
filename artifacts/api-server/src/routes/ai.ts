@@ -154,6 +154,9 @@ aiRouter.post("/chat", validate(ChatSchema), async (req, res) => {
             chunkIndex: chunk.chunk_index,
             page: chunk.page_number,
             document: chunk.documentTitle,
+            preview: String(chunk.content ?? "")
+            .replace(/\s+/g, " ")
+            .slice(0, 500),
           },
           "Retrieved RAG chunk"
         );
