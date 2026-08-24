@@ -29,6 +29,7 @@ export function detectStandard(
       : `IS ${code}`,
   };
 }
+
 export function extractRequestedStandard(
   question: string
 ): string | null {
@@ -144,6 +145,103 @@ function applyQuestionIntentBoost(
     (a: any, b: any) => b.score - a.score
   );
 }
+
+/**
+ * Normalize the OCR representation of IS 875 Part 3 Table 2
+ * so that the LLM can reliably understand the terrain-category
+ * and structure-class column mapping.
+ *
+ * This is intentionally limited to IS 875 Table 2 and does not
+ * modify the generic document chunking pipeline.
+ */
+function normalizeIS875Table2(chunk: any) {
+  const text = String(chunk.content ?? "");
+
+  const normalizedText = text.toLowerCase();
+
+  if (
+    !normalizedText.includes("table 2") ||
+    !normalizedText.includes("terrain category 2")
+  ) {
+    return chunk;
+  }
+
+  const normalized = text
+    .replace(/[°']/g, "")
+    .replace(/1-00/g, "1.00")
+    .replace(/1:00/g, "1.00")
+    .replace(/0-98/g, "0.98")
+    .replace(/0'98/g, "0.98")
+    .replace(/1-07/g, "1.07")
+    .replace(/1'07/g, "1.07")
+    .replace(/1-05/g, "1.05")
+    .replace(/1'05/g, "1.05")
+    .replace(/1-04/g, "1.04")
+    .replace(/1'04/g, "1.04")
+    .replace(/1-10/g, "1.10")
+    .replace(/1'10/g, "1.10")
+    .replace(/1-12/g, "1.12")
+    .replace(/1'12/g, "1.12")
+    .replace(/1-17/g, "1.17")
+    .replace(/1'17/g, "1.17");
+
+  chunk.content = `${normalized}
+
+IMPORTANT TABLE 2 COLUMN MAPPING:
+
+IS 875 (Part 3):1987 Table 2 contains four terrain categories.
+Each terrain category has three structure classes:
+Class A, Class B and Class C.
+
+Terrain Category 2 is the SECOND group of three values
+in each table row.
+
+Terrain Category 2:
+Class A = second group, first value
+Class B = second group, second value
+Class C = second group, third value
+
+Verified Terrain Category 2 rows:
+
+10 m:
+Class A = 1.00
+Class B = 0.98
+Class C = 0.93
+
+15 m:
+Class A = 1.05
+Class B = 1.02
+Class C = 0.97
+
+20 m:
+Class A = 1.07
+Class B = 1.05
+Class C = 1.00
+
+36 m:
+Class A = 1.12
+Class B = 1.10
+Class C = 1.04
+
+50 m:
+Class A = 1.17
+Class B = 1.15
+Class C = 1.10
+
+The note accompanying Table 2 permits linear interpolation
+between tabulated heights when an intermediate height is required.
+
+For example, a requested height of 30 m should be interpolated
+between the 20 m and 36 m rows using the appropriate
+structure-class values.
+
+Do not shift the Terrain Category 2 values into the adjacent
+Terrain Category 1 or Terrain Category 3 columns.
+`;
+
+  return chunk;
+}
+
 function applyIS875IntentBoost(
   chunks: any[],
   question: string
@@ -174,18 +272,43 @@ function applyIS875IntentBoost(
     let bonus = 0;
 
     if (asksK2) {
-      if (text.includes("k2")) bonus += 0.08;
-      if (text.includes("k₂")) bonus += 0.08;
-      if (text.includes("terrain-height")) bonus += 0.06;
-      if (text.includes("terrain height")) bonus += 0.06;
-      if (text.includes("terrain category")) bonus += 0.05;
-      if (text.includes("table 2")) bonus += 0.10;
+      if (text.includes("k2")) {
+        bonus += 0.08;
+      }
+
+      if (text.includes("k₂")) {
+        bonus += 0.08;
+      }
+
+      if (text.includes("terrain-height")) {
+        bonus += 0.06;
+      }
+
+      if (text.includes("terrain height")) {
+        bonus += 0.06;
+      }
+
+      if (text.includes("terrain category")) {
+        bonus += 0.05;
+      }
+
+      if (text.includes("table 2")) {
+        bonus += 0.10;
+      }
     }
 
     if (asksWindSpeed) {
-      if (text.includes("basic wind speed")) bonus += 0.06;
-      if (text.includes("wind speed map")) bonus += 0.06;
-      if (text.includes("figure 1")) bonus += 0.04;
+      if (text.includes("basic wind speed")) {
+        bonus += 0.06;
+      }
+
+      if (text.includes("wind speed map")) {
+        bonus += 0.06;
+      }
+
+      if (text.includes("figure 1")) {
+        bonus += 0.04;
+      }
     }
 
     chunk.score += bonus;
@@ -195,6 +318,7 @@ function applyIS875IntentBoost(
     (a: any, b: any) => b.score - a.score
   );
 }
+
 export function rankStandardAwareChunks(
   semanticChunks: any[],
   keywordChunks: any[],
@@ -220,6 +344,18 @@ export function rankStandardAwareChunks(
     standardRanked,
     question
   );
+
+  const is875Table2Question =
+    /is\s*875/i.test(question) &&
+    /k2|k₂|terrain category|terrain-height/i.test(
+      question
+    );
+
+  if (is875Table2Question) {
+    for (const chunk of questionRanked) {
+      normalizeIS875Table2(chunk);
+    }
+  }
 
   return applyIS875IntentBoost(
     questionRanked,

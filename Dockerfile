@@ -24,6 +24,11 @@ RUN pnpm --filter @workspace/api-server build
 # -------------------------
 FROM node:22-alpine
 
+RUN apk add --no-cache \
+  poppler-utils \
+  tesseract-ocr \
+  tesseract-ocr-data-eng
+
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
