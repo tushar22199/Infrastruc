@@ -42,7 +42,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch("https://infrastruc.onrender.com/api/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
