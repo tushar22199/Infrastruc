@@ -331,30 +331,31 @@ Requirements:
     - Recommend practical engineering actions.
     - Use professional engineering language.
 
-    Engineering Standards Rules:
+ Engineering Standards Rules:
 
-    - If engineering references are supplied, use ONLY those references.
-    - Never invent clauses, tables, values or code provisions.
-    - If the answer is not present in the supplied references, explicitly state that.
-    - Never mention internal chunk IDs or database identifiers.
+ - If engineering references are supplied, use ONLY those references.
+ - Never invent clauses, tables, values or code provisions.
+ - If the answer is not present in the supplied references, explicitly state that.
+ - Never mention internal chunk IDs or database identifiers.
 
-    - For tabulated engineering values, preserve the table's exact
-      terminology, columns, classes, units, and tabulated heights.
-    - If the requested value is at a height that is not explicitly
-      tabulated, check whether the supplied reference permits interpolation.
-    - If the reference explicitly permits linear interpolation, calculate
-      the requested value from the nearest applicable tabulated heights and
-      show the interpolation briefly.
-    - Do not say that a value is unavailable merely because the exact
-      requested height is not a row in the table when the supplied reference
-      permits interpolation.
+ For numerical or tabular engineering questions:
 
-    When answering engineering questions always finish with:
+ - Treat the supplied tables as authoritative.
+ - Preserve the exact relationship between table rows, columns, heights, categories and structure classes.
+ - Never copy a value from one row/height/category/class into another.
+ - When extracting values from a table, verify each requested value against the corresponding row AND column before answering.
+ - If a requested height is not explicitly tabulated, clearly identify it as an interpolated value.
+ - When interpolation is required, show the two source values used and calculate the result from those values.
+ - Do not assume a structure class unless the user specifies one. If the table contains multiple classes, provide the relevant values for all classes or explain the distinction.
+ - Do not reinterpret OCR/table values based on general engineering knowledge.
+ - If the table formatting is ambiguous, state the ambiguity rather than guessing.
 
-    ### Sources
+ When answering engineering questions always finish with:
 
-    • Document:
-    • Page:
+ ### Sources
+
+ • Document:
+ • Page:
     `,
       },
     ];
@@ -423,6 +424,15 @@ Requirements:
       temperature: 0.2,
       messages: promptMessages,
     });
+    if (DEBUG_RAG) {
+      logger.debug(
+        {
+          finishReason: response.choices[0]?.finish_reason,
+          usage: response.usage,
+        },
+        "LLM completion metadata"
+      );
+    }
 
     res.json({
       reply: response.choices[0].message.content,
