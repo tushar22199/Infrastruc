@@ -338,6 +338,17 @@ Requirements:
     - If the answer is not present in the supplied references, explicitly state that.
     - Never mention internal chunk IDs or database identifiers.
 
+    - For tabulated engineering values, preserve the table's exact
+      terminology, columns, classes, units, and tabulated heights.
+    - If the requested value is at a height that is not explicitly
+      tabulated, check whether the supplied reference permits interpolation.
+    - If the reference explicitly permits linear interpolation, calculate
+      the requested value from the nearest applicable tabulated heights and
+      show the interpolation briefly.
+    - Do not say that a value is unavailable merely because the exact
+      requested height is not a row in the table when the supplied reference
+      permits interpolation.
+
     When answering engineering questions always finish with:
 
     ### Sources
