@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -58,6 +59,7 @@ export default function LogInspection() {
   const initialLng = searchParams.get("lng");
 
   const { addToQueue, syncQueue, isOnline } = useOfflineSync();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isLocating, setIsLocating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -162,6 +164,14 @@ export default function LogInspection() {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (user?.role === "VIEWER") {
+      toast({
+        title: "Permission denied",
+        description: "Viewers cannot create or submit inspections.",
+        variant: "destructive",
+      });
+      return;
+    }
     const { reinspectionInterval, geometry, ...rest } = values;
     const payload: any = {
       ...rest,
