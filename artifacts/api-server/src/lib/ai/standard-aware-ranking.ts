@@ -319,6 +319,227 @@ function applyIS875IntentBoost(
   );
 }
 
+function applyIS875PressureIntentBoost(
+  chunks: any[],
+  question: string
+) {
+  const normalized = question.toLowerCase();
+
+  const is875 =
+    normalized.includes("is 875") ||
+    normalized.includes("is875");
+
+  const asksPressure =
+    normalized.includes("design wind pressure") ||
+    normalized.includes("wind pressure") ||
+    normalized.includes("pressure at height") ||
+    normalized.includes("p_z") ||
+    normalized.includes("pz") ||
+    normalized.includes("pressure");
+
+  if (!is875 || !asksPressure) {
+    return chunks;
+  }
+
+  for (const chunk of chunks) {
+    const text = String(chunk.content ?? "").toLowerCase();
+
+    let bonus = 0;
+
+    // Strongest signal: Clause 5.4 / actual pressure equation
+    if (text.includes("5.4")) {
+      bonus += 0.12;
+    }
+
+    if (text.includes("design wind pressure")) {
+      bonus += 0.12;
+    }
+
+    if (text.includes("wind pressure")) {
+      bonus += 0.08;
+    }
+
+    if (text.includes("0.6")) {
+      bonus += 0.10;
+    }
+
+    if (text.includes("v_z")) {
+      bonus += 0.06;
+    }
+
+    if (text.includes("vz")) {
+      bonus += 0.04;
+    }
+
+    if (text.includes("p_z")) {
+      bonus += 0.06;
+    }
+
+    if (text.includes("n/m")) {
+      bonus += 0.03;
+    }
+
+    chunk.score += bonus;
+  }
+
+  return chunks.sort(
+    (a: any, b: any) => b.score - a.score
+  );
+}
+
+function applyIS875CityWindSpeedBoost(
+  chunks: any[],
+  question: string
+) {
+  const normalized = question.toLowerCase();
+
+  const is875 =
+    normalized.includes("is 875") ||
+    normalized.includes("is875");
+
+  if (!is875) {
+    return chunks;
+  }
+
+  const asksCityWindSpeed =
+    normalized.includes("wind speed") &&
+    (
+      normalized.includes("city") ||
+      normalized.includes("town") ||
+      normalized.includes("delhi") ||
+      normalized.includes("agra") ||
+      normalized.includes("mumbai") ||
+      normalized.includes("bombay") ||
+      normalized.includes("calcutta") ||
+      normalized.includes("kolkata") ||
+      normalized.includes("chennai") ||
+      normalized.includes("madras") ||
+      normalized.includes("bangalore") ||
+      normalized.includes("hyderabad") ||
+      normalized.includes("jaipur") ||
+      normalized.includes("pune") ||
+      normalized.includes("ahmedabad")
+    );
+
+  if (!asksCityWindSpeed) {
+    return chunks;
+  }
+
+  for (const chunk of chunks) {
+    const text = String(chunk.content ?? "").toLowerCase();
+
+    let bonus = 0;
+
+    if (text.includes("appendix a")) {
+      bonus += 0.15;
+    }
+
+    if (text.includes("basic wind speed")) {
+      bonus += 0.10;
+    }
+
+    if (text.includes("city/town")) {
+      bonus += 0.08;
+    }
+
+    if (text.includes("city/ town")) {
+      bonus += 0.08;
+    }
+
+    // Boost the specific city mentioned in the question.
+    const cityNames = [
+      "delhi",
+      "agra",
+      "ahmadabad",
+      "ajmer",
+      "almora",
+      "amritsar",
+      "asansol",
+      "aurangabad",
+      "bahraich",
+      "bangalore",
+      "barauni",
+      "bareilly",
+      "bhatinda",
+      "bhilai",
+      "bhopal",
+      "bhubaneshwar",
+      "bhuj",
+      "bikaner",
+      "bokaro",
+      "bombay",
+      "calcutta",
+      "calicut",
+      "chandigarh",
+      "coimbatore",
+      "cuttack",
+      "darbhanga",
+      "darjeeling",
+      "dehra dun",
+      "durgapur",
+      "gangtok",
+      "gauhati",
+      "gaya",
+      "gorakhpur",
+      "hyderabad",
+      "imphal",
+      "jabalpur",
+      "jaipur",
+      "jamshedpur",
+      "jhansi",
+      "jodhpur",
+      "kanpur",
+      "kohima",
+      "kurnool",
+      "lucknow",
+      "ludhiana",
+      "madras",
+      "madurai",
+      "mandi",
+      "mangalore",
+      "moradabad",
+      "mysore",
+      "nagpur",
+      "nainital",
+      "nasik",
+      "nellore",
+      "panjim",
+      "patiala",
+      "patna",
+      "pondicherry",
+      "port blair",
+      "pune",
+      "raipur",
+      "rajkot",
+      "ranchi",
+      "roorkee",
+      "rourkela",
+      "simla",
+      "srinagar",
+      "surat",
+      "trivandrum",
+      "udaipur",
+      "vadodara",
+      "varanasi",
+      "vijaywada",
+      "visakhapatnam",
+    ];
+
+    for (const city of cityNames) {
+      if (normalized.includes(city) && text.includes(city)) {
+        bonus += 0.20;
+        break;
+      }
+    }
+
+    chunk.score += bonus;
+  }
+
+  return chunks.sort(
+    (a: any, b: any) => b.score - a.score
+  );
+}
+
 export function rankStandardAwareChunks(
   semanticChunks: any[],
   keywordChunks: any[],
@@ -357,8 +578,18 @@ export function rankStandardAwareChunks(
     }
   }
 
-  return applyIS875IntentBoost(
+  const windSpeedRanked = applyIS875IntentBoost(
     questionRanked,
+    question
+  );
+
+  const pressureRanked = applyIS875PressureIntentBoost(
+    windSpeedRanked,
+    question
+  );
+
+  return applyIS875CityWindSpeedBoost(
+    pressureRanked,
     question
   );
 }
