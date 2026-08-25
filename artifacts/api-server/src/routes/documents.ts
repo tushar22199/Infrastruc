@@ -11,8 +11,8 @@ import {
 import { extractPdfPages } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
-import { authorize } from "../middlewares/authMiddleware";
 import { Router } from "express";
+import { authorize } from "../middlewares/authorize";
 import { requireAuth } from "../middlewares/authMiddleware";
 
 
