@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   useListEngineers,
   getListEngineersQueryKey,
@@ -52,10 +51,13 @@ export function AssignPanel({
                 }
               : old,
         );
+
         queryClient.invalidateQueries({
           queryKey: getListInspectionsQueryKey(),
         });
+
         const name = data.assignedToName ?? "engineer";
+
         toast({
           title: "Assigned",
           description: `Inspection assigned to ${name}. They've been notified.`,
@@ -72,17 +74,26 @@ export function AssignPanel({
   });
 
   function handleAssign(userId: string, displayName: string) {
-    assign.mutate({ id: inspectionId, data: { userId, displayName } });
+    assign.mutate({
+      id: inspectionId,
+      data: { userId, displayName },
+    });
   }
 
   function handleUnassign() {
-    assign.mutate({ id: inspectionId, data: { userId: "", displayName: "" } });
+    assign.mutate({
+      id: inspectionId,
+      data: {
+        userId: "",
+        displayName: "",
+      },
+    });
   }
 
   const isAssigned = !!currentAssignedTo && currentAssignedTo !== "";
   const isAssignedToMe = user && currentAssignedTo === user.id;
 
-  // Include current user at the top if not already in engineer list
+  // Include current user at the top if not already in engineer list.
   const myEntry =
     user && !engineers.some((e) => e.userId === user.id)
       ? [
@@ -95,7 +106,10 @@ export function AssignPanel({
           },
         ]
       : [];
+
   const allEngineers = [...myEntry, ...engineers];
+
+  const canAssign = user?.role === "ADMIN";
 
   return (
     <div>
@@ -107,8 +121,10 @@ export function AssignPanel({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-2 rounded-md flex-1 min-w-0">
             <UserCheck className="h-4 w-4 flex-shrink-0" />
+
             <span className="text-sm font-semibold truncate">
               {currentAssignedToName ?? currentAssignedTo}
+
               {isAssignedToMe && (
                 <span className="ml-1.5 text-[10px] font-mono bg-primary/20 px-1 py-0.5 rounded">
                   YOU
@@ -116,42 +132,55 @@ export function AssignPanel({
               )}
             </span>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 flex-shrink-0"
-                disabled={assign.isPending}
-              >
-                <ChevronDown className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              {allEngineers.map((eng) => (
-                <DropdownMenuItem
-                  key={eng.userId}
-                  onClick={() => handleAssign(eng.userId, eng.displayName)}
-                  className={`text-xs cursor-pointer ${eng.userId === currentAssignedTo ? "font-bold text-primary" : ""}`}
+
+          {canAssign && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 flex-shrink-0"
+                  disabled={assign.isPending}
                 >
-                  {eng.userId === user?.id
-                    ? `${eng.displayName} (You)`
-                    : eng.displayName}
-                  {eng.userId === currentAssignedTo && " ✓"}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-52">
+                {allEngineers.map((eng) => (
+                  <DropdownMenuItem
+                    key={eng.userId}
+                    onClick={() =>
+                      handleAssign(eng.userId, eng.displayName)
+                    }
+                    className={`text-xs cursor-pointer ${
+                      eng.userId === currentAssignedTo
+                        ? "font-bold text-primary"
+                        : ""
+                    }`}
+                  >
+                    {eng.userId === user?.id
+                      ? `${eng.displayName} (You)`
+                      : eng.displayName}
+
+                    {eng.userId === currentAssignedTo && " ✓"}
+                  </DropdownMenuItem>
+                ))}
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={handleUnassign}
+                  className="text-xs text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <X className="h-3 w-3 mr-2" />
+                  Unassign
                 </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleUnassign}
-                className="text-xs text-destructive focus:text-destructive cursor-pointer"
-              >
-                <X className="h-3 w-3 mr-2" />
-                Unassign
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
-      ) : (
+      ) : canAssign ? (
         <div className="flex gap-2">
           {user && (
             <Button
@@ -186,13 +215,16 @@ export function AssignPanel({
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="start" className="w-52">
                 {allEngineers
                   .filter((e) => e.userId !== user?.id)
                   .map((eng) => (
                     <DropdownMenuItem
                       key={eng.userId}
-                      onClick={() => handleAssign(eng.userId, eng.displayName)}
+                      onClick={() =>
+                        handleAssign(eng.userId, eng.displayName)
+                      }
                       className="text-xs cursor-pointer"
                     >
                       {eng.displayName}
@@ -208,6 +240,10 @@ export function AssignPanel({
             </p>
           )}
         </div>
+      ) : (
+        <p className="text-xs text-muted-foreground italic">
+          Not assigned
+        </p>
       )}
     </div>
   );
