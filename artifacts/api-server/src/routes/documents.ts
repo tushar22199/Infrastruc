@@ -103,11 +103,21 @@ documentsRouter.post(
         console.error("Embedding failed:", err);
       });
 
-            res.status(201).json(document);
-          } catch (err) {
-            next(err);
-          }
+      res.status(201).json(document);
+      } catch (err) {
+      logger.error(
+        {
+          err,
+          userId: req.user?.id,
+          file: req.file?.originalname,
+          path: req.file?.path,
         },
+        "Document upload failed"
+      );
+
+      next(err);
+      }
+      },
       );
 documentsRouter.post(
   "/repair-is875-embeddings",
