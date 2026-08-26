@@ -124,29 +124,30 @@ documentsRouter.post(
 documentsRouter.post(
   "/repair-is875",
   authorize(["ADMIN"]),
-  async (_req, res, next) => {
+  upload.single("file"),
+  async (req, res, next) => {
     try {
       const documentId =
         "1c6d38ce-fd4e-45dd-8973-e6371972485f";
 
-      const document = await getDocumentById(documentId);
-
-      if (!document) {
-        res.status(404).json({
+      if (!req.file) {
+        res.status(400).json({
           success: false,
-          message: "IS 875 document not found",
+          message: "IS 875 PDF file is required",
         });
         return;
       }
 
       logger.info(
-        { documentId, storagePath: document.storage_path },
+        {
+          documentId,
+          file: req.file.originalname,
+          path: req.file.path,
+        },
         "Starting IS 875 document repair"
       );
 
-      const storagePath = String(document.storage_path);
-
-      const pages = await extractPdfPages(storagePath);
+      const pages = await extractPdfPages(req.file.path);
 
       const chunks = (
         await Promise.all(
