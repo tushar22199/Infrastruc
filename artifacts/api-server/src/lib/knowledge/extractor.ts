@@ -1,3 +1,4 @@
+import { normalizeIS875AppendixA } from "./is875-appendix-a";
 import fs from "fs/promises";
 import pdfParse from "pdf-parse";
 import { normalizePdfText } from "./normalize";
@@ -32,7 +33,11 @@ export async function extractPdfPages(
     },
   });
 
-  return pages.filter((page) => page.text.trim().length > 0);
+  const filteredPages = pages.filter(
+    (page) => page.text.trim().length > 0
+  );
+
+  return normalizeIS875AppendixA(filteredPages);
 }
 
 export async function extractPdfText(

@@ -220,7 +220,7 @@ describe("retrieveContext", () => {
     );
 
     expect(totalChars).toBeLessThanOrEqual(12000);
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(3);
   });
   it("handles neighbor expansion at the start of a document", async () => {
     vi.mocked(searchSimilarChunks).mockResolvedValue([

@@ -4,10 +4,12 @@ import { embedDocument } from "../lib/knowledge/embedder";
 import {
   createDocument,
   createDocumentChunks,
+  deleteDocumentChunks,
   listDocuments,
   getDocumentById,
   deleteDocument,
 } from "../lib/knowledge/repository";
+
 import { extractPdfPages } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
@@ -120,15 +122,50 @@ documentsRouter.post(
       },
       );
 documentsRouter.post(
-  "/repair-is875-embeddings",
+  "/repair-is875",
   authorize(["ADMIN"]),
   async (_req, res, next) => {
     try {
-      const documentId = "02038ff4-6356-4ac1-95d8-0a825145493f";
+      const documentId =
+        "02038ff4-6356-4ac1-95d8-0a825145493f";
+
+      const document = await getDocumentById(documentId);
+
+      if (!document) {
+        res.status(404).json({
+          success: false,
+          message: "IS 875 document not found",
+        });
+        return;
+      }
 
       logger.info(
-        { documentId },
-        "Starting IS 875 embedding repair"
+        { documentId, storagePath: document.storage_path },
+        "Starting IS 875 document repair"
+      );
+
+      const storagePath = String(document.storage_path);
+
+      const pages = await extractPdfPages(storagePath);
+
+      const chunks = (
+        await Promise.all(
+          pages.map((page) =>
+            chunkText(page.text, page.pageNumber)
+          )
+        )
+      ).flat();
+
+      await deleteDocumentChunks(documentId);
+      await createDocumentChunks(documentId, chunks);
+
+      logger.info(
+        {
+          documentId,
+          pageCount: pages.length,
+          chunkCount: chunks.length,
+        },
+        "IS 875 chunks rebuilt"
       );
 
       void embedDocument(documentId).catch((err) => {
@@ -140,8 +177,11 @@ documentsRouter.post(
 
       res.status(202).json({
         success: true,
-        message: "IS 875 embedding repair started",
+        message:
+          "IS 875 chunks rebuilt and embedding started",
         documentId,
+        pageCount: pages.length,
+        chunkCount: chunks.length,
       });
     } catch (err) {
       next(err);

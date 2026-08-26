@@ -111,6 +111,13 @@ export async function createDocumentChunks(
     }))
   );
 }
+export async function deleteDocumentChunks(
+  documentId: string
+) {
+  await db
+    .delete(documentChunksTable)
+    .where(eq(documentChunksTable.documentId, documentId));
+}
 
 export async function getDocumentChunks(documentId: string) {
   return db
