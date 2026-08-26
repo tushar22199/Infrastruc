@@ -342,10 +342,40 @@ export async function retrieveContext(question: string) {
   let totalChars = 0;
   const finalContext: any[] = [];
 
+  // Always preserve the highest-ranked original chunks.
+  // These are the chunks that actually matched the query.
+  const mandatoryChunks = topChunks;
+
+  for (const chunk of mandatoryChunks) {
+    const content = String(chunk.content ?? "");
+    const contentLength = content.length;
+
+    if (!contentLength) {
+      continue;
+    }
+
+    finalContext.push(chunk);
+    totalChars += contentLength;
+  }
+
+  // Fill remaining context with neighbors / additional chunks.
   for (const chunk of uniqueExpanded) {
-    const contentLength = String(
-      chunk.content ?? ""
-    ).length;
+    if (
+      finalContext.some(
+        (existing) =>
+          existing.document_id === chunk.document_id &&
+          existing.chunk_index === chunk.chunk_index
+      )
+    ) {
+      continue;
+    }
+
+    const content = String(chunk.content ?? "");
+    const contentLength = content.length;
+
+    if (!contentLength) {
+      continue;
+    }
 
     if (totalChars + contentLength > MAX_CONTEXT_CHARS) {
       continue;
