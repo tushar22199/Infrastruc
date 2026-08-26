@@ -127,7 +127,7 @@ documentsRouter.post(
   async (_req, res, next) => {
     try {
       const documentId =
-        "02038ff4-6356-4ac1-95d8-0a825145493f";
+        "9f6afb17-9299-4426-a25b-5422887785e2";
 
       const document = await getDocumentById(documentId);
 
