@@ -59,6 +59,8 @@ export async function getDocumentById(documentId: string) {
       d.category,
       d.file_size,
       d.storage_path,
+      d.processing_status,
+      d.processing_error,
       d.created_at,
       d.updated_at,
       COUNT(dc.id)::int AS chunk_count
@@ -74,6 +76,8 @@ export async function getDocumentById(documentId: string) {
       d.category,
       d.file_size,
       d.storage_path,
+      d.processing_status,
+      d.processing_error,
       d.created_at,
       d.updated_at;
   `);
@@ -88,7 +92,19 @@ export async function deleteDocument(documentId: string) {
 
   return deleted;
 }
-
+export async function updateDocumentProcessingStatus(
+  documentId: string,
+  status: "idle" | "processing" | "completed" | "failed",
+  error?: string | null,
+) {
+  await db
+    .update(documentsTable)
+    .set({
+      processingStatus: status,
+      processingError: error ?? null,
+    })
+    .where(eq(documentsTable.id, documentId));
+}
 /* -------------------------------------------------------------------------- */
 /*                              Chunk Management                              */
 /* -------------------------------------------------------------------------- */

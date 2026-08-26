@@ -19,6 +19,15 @@ export const documentCategoryEnum = pgEnum("document_category", [
   "Drawing",
   "Other",
 ]);
+export const documentProcessingStatusEnum = pgEnum(
+  "document_processing_status",
+  [
+    "idle",
+    "processing",
+    "completed",
+    "failed",
+  ],
+);
 export const documentsTable = pgTable("documents", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -38,7 +47,11 @@ export const documentsTable = pgTable("documents", {
   fileSize: integer("file_size").notNull(),
 
   storagePath: text("storage_path").notNull(),
+  processingStatus: documentProcessingStatusEnum("processing_status")
+    .default("idle")
+    .notNull(),
 
+  processingError: text("processing_error"),
   createdAt: timestamp("created_at")
     .defaultNow()
     .notNull(),

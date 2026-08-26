@@ -1,4 +1,7 @@
 import fs from "fs/promises";
+
+import { Router } from "express";
+
 import { logger } from "../lib/logger";
 import { retrieveContext } from "../lib/knowledge/retriever";
 import { embedDocument } from "../lib/knowledge/embedder";
@@ -9,22 +12,24 @@ import {
   listDocuments,
   getDocumentById,
   deleteDocument,
+  updateDocumentProcessingStatus,
 } from "../lib/knowledge/repository";
-
 import {
   extractPdfPages,
   extractIS875AppendixPages,
 } from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
-import { Router } from "express";
 import { authorize } from "../middlewares/authorize";
 import { requireAuth } from "../middlewares/authMiddleware";
-
 
 const documentsRouter = Router();
 
 documentsRouter.use(requireAuth);
+
+/* -------------------------------------------------------------------------- */
+/*                              Document Listing                              */
+/* -------------------------------------------------------------------------- */
 
 documentsRouter.get("/", async (_req, res, next) => {
   try {
@@ -38,11 +43,18 @@ documentsRouter.get("/", async (_req, res, next) => {
     next(err);
   }
 });
+
+/* -------------------------------------------------------------------------- */
+/*                              Document Upload                               */
+/* -------------------------------------------------------------------------- */
+
 documentsRouter.post(
   "/upload",
   authorize(["ADMIN", "INSPECTOR"]),
   upload.single("file"),
   async (req, res, next) => {
+    let documentId: string | undefined;
+
     try {
       if (!req.file) {
         res.status(400).json({
@@ -52,6 +64,7 @@ documentsRouter.post(
       }
 
       const userId = req.user!.id;
+
       const allowedCategories = [
         "Standard",
         "Project Document",
@@ -64,16 +77,23 @@ documentsRouter.post(
       type DocumentCategory = (typeof allowedCategories)[number];
 
       function getCategory(value: string): DocumentCategory {
-        if ((allowedCategories as readonly string[]).includes(value)) {
+        if (
+          (allowedCategories as readonly string[]).includes(value)
+        ) {
           return value as DocumentCategory;
         }
 
         return "Other";
       }
-      function getValue(value: string | string[] | undefined): string {
+
+      function getValue(
+        value: string | string[] | undefined,
+      ): string {
         if (!value) return "";
+
         return Array.isArray(value) ? value[0] : value;
       }
+
       const document = await createDocument({
         title: getValue(req.body.title),
         fileName: req.file.originalname,
@@ -83,17 +103,38 @@ documentsRouter.post(
         fileSize: req.file.size,
         storagePath: req.file.path,
       });
-      const pages = await extractIS875AppendixPages(req.file.path);
+
+      documentId = document.id;
+
+      await updateDocumentProcessingStatus(
+        document.id,
+        "processing",
+        null,
+      );
+
+      const pages = await extractIS875AppendixPages(
+        req.file.path,
+      );
 
       const chunks = (
         await Promise.all(
           pages.map((page) =>
-            chunkText(page.text, page.pageNumber)
-          )
+            chunkText(page.text, page.pageNumber),
+          ),
         )
       ).flat();
 
-      await createDocumentChunks(document.id, chunks);
+      if (!chunks.length) {
+        throw new Error(
+          "Document extraction produced no chunks",
+        );
+      }
+
+      await createDocumentChunks(
+        document.id,
+        chunks,
+      );
+
       logger.info(
         {
           documentId: document.id,
@@ -101,30 +142,95 @@ documentsRouter.post(
           chunkCount: chunks.length,
           fileSize: req.file.size,
         },
-        "Document processed successfully"
+        "Document processed successfully",
       );
 
-      // Run embedding in the background
-      void embedDocument(document.id).catch((err) => {
-        console.error("Embedding failed:", err);
-      });
+      // Embedding runs in the background.
+      void (async () => {
+        try {
+          await embedDocument(document.id);
+
+          await updateDocumentProcessingStatus(
+            document.id,
+            "completed",
+            null,
+          );
+
+          logger.info(
+            { documentId: document.id },
+            "Document embedding completed",
+          );
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
+          await updateDocumentProcessingStatus(
+            document.id,
+            "failed",
+            errorMessage,
+          ).catch((statusErr) => {
+            logger.error(
+              {
+                err: statusErr,
+                documentId: document.id,
+              },
+              "Failed to update document processing status",
+            );
+          });
+
+          logger.error(
+            {
+              err,
+              documentId: document.id,
+            },
+            "Document embedding failed",
+          );
+        }
+      })();
 
       res.status(201).json(document);
-      } catch (err) {
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : String(err);
+
+      if (documentId) {
+        await updateDocumentProcessingStatus(
+          documentId,
+          "failed",
+          errorMessage,
+        ).catch((statusErr) => {
+          logger.error(
+            {
+              err: statusErr,
+              documentId,
+            },
+            "Failed to update document processing status",
+          );
+        });
+      }
+
       logger.error(
         {
           err,
+          documentId,
           userId: req.user?.id,
           file: req.file?.originalname,
           path: req.file?.path,
         },
-        "Document upload failed"
+        "Document upload failed",
       );
 
       next(err);
-      }
-      },
-      );
+    }
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*                         IS 875 Document Repair                             */
+/* -------------------------------------------------------------------------- */
+
 documentsRouter.post(
   "/repair-is875",
   authorize(["ADMIN"]),
@@ -144,17 +250,23 @@ documentsRouter.post(
 
       const filePath = req.file.path;
 
+      await updateDocumentProcessingStatus(
+        documentId,
+        "processing",
+        null,
+      );
+
       logger.info(
         {
           documentId,
           file: req.file.originalname,
           path: filePath,
         },
-        "Starting IS 875 document repair"
+        "Starting IS 875 document repair",
       );
 
-      // Return immediately. OCR and chunk rebuilding happen
-      // in the background so the HTTP request does not time out.
+      // Return immediately. OCR, chunk rebuilding,
+      // and embedding happen in the background.
       res.status(202).json({
         success: true,
         message: "IS 875 document repair started",
@@ -165,7 +277,7 @@ documentsRouter.post(
         try {
           logger.info(
             { documentId },
-            "IS 875 background extraction started"
+            "IS 875 background extraction started",
           );
 
           const pages = await extractPdfPages(filePath);
@@ -175,19 +287,29 @@ documentsRouter.post(
               documentId,
               pageCount: pages.length,
             },
-            "IS 875 PDF extraction completed"
+            "IS 875 PDF extraction completed",
           );
 
           const chunks = (
             await Promise.all(
               pages.map((page) =>
-                chunkText(page.text, page.pageNumber)
-              )
+                chunkText(page.text, page.pageNumber),
+              ),
             )
           ).flat();
 
+          if (!chunks.length) {
+            throw new Error(
+              "IS 875 extraction produced no chunks",
+            );
+          }
+
           await deleteDocumentChunks(documentId);
-          await createDocumentChunks(documentId, chunks);
+
+          await createDocumentChunks(
+            documentId,
+            chunks,
+          );
 
           logger.info(
             {
@@ -195,38 +317,71 @@ documentsRouter.post(
               pageCount: pages.length,
               chunkCount: chunks.length,
             },
-            "IS 875 chunks rebuilt"
+            "IS 875 chunks rebuilt",
           );
 
           await embedDocument(documentId);
 
+          await updateDocumentProcessingStatus(
+            documentId,
+            "completed",
+            null,
+          );
+
           logger.info(
             { documentId },
-            "IS 875 embedding completed"
+            "IS 875 embedding completed",
           );
         } catch (err) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
+          await updateDocumentProcessingStatus(
+            documentId,
+            "failed",
+            errorMessage,
+          ).catch((statusErr) => {
+            logger.error(
+              {
+                err: statusErr,
+                documentId,
+              },
+              "Failed to update IS 875 processing status",
+            );
+          });
+
           logger.error(
             {
               err,
               documentId,
             },
-            "IS 875 background repair failed"
+            "IS 875 background repair failed",
           );
         } finally {
-          // The uploaded PDF is only needed during processing.
-          await fs.rm(filePath, { force: true }).catch((err) => {
-            logger.warn(
-              { err, filePath },
-              "Failed to remove temporary IS 875 PDF"
-            );
-          });
+          await fs.rm(filePath, { force: true }).catch(
+            (err) => {
+              logger.warn(
+                {
+                  err,
+                  filePath,
+                },
+                "Failed to remove temporary IS 875 PDF",
+              );
+            },
+          );
         }
       })();
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
+
+/* -------------------------------------------------------------------------- */
+/*                                  Search                                    */
+/* -------------------------------------------------------------------------- */
 
 documentsRouter.post(
   "/search",
@@ -250,8 +405,13 @@ documentsRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
+
+/* -------------------------------------------------------------------------- */
+/*                              Document Details                              */
+/* -------------------------------------------------------------------------- */
+
 documentsRouter.get("/:id", async (req, res, next) => {
   try {
     const document = await getDocumentById(req.params.id);
@@ -272,31 +432,38 @@ documentsRouter.get("/:id", async (req, res, next) => {
     next(err);
   }
 });
+
+/* -------------------------------------------------------------------------- */
+/*                              Document Delete                               */
+/* -------------------------------------------------------------------------- */
+
 documentsRouter.delete(
   "/:id",
   authorize(["ADMIN"]),
   async (req, res, next) => {
-  try {
-    const documentId = Array.isArray(req.params.id)
-      ? req.params.id[0]
-      : req.params.id;
+    try {
+      const documentId = Array.isArray(req.params.id)
+        ? req.params.id[0]
+        : req.params.id;
 
-    const deleted = await deleteDocument(documentId);
+      const deleted = await deleteDocument(documentId);
 
-    if (!deleted) {
-      res.status(404).json({
-        success: false,
-        message: "Document not found",
+      if (!deleted) {
+        res.status(404).json({
+          success: false,
+          message: "Document not found",
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        message: "Document deleted successfully",
       });
-      return;
+    } catch (err) {
+      next(err);
     }
+  },
+);
 
-    res.json({
-      success: true,
-      message: "Document deleted successfully",
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-      export default documentsRouter;
+export default documentsRouter;
