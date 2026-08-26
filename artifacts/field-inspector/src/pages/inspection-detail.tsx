@@ -179,30 +179,35 @@ export default function InspectionDetail() {
         </div>
 
         <div className="flex items-center gap-2 bg-card p-2 rounded-md border border-border shadow-sm">
-          <Select value={currentStatus} onValueChange={setStatus}>
-            <SelectTrigger className="w-40 bg-background border-input font-bold uppercase tracking-wider text-xs h-9">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(InspectionUpdateStatus).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            size="sm"
-            onClick={handleStatusUpdate}
-            disabled={
-              !status ||
-              status === inspection.status ||
-              updateMutation.isPending
-            }
-            className="h-9 px-3"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
+          {user?.role !== "VIEWER" && (
+            <>
+              <Select value={currentStatus} onValueChange={setStatus}>
+                <SelectTrigger className="w-40 bg-background border-input font-bold uppercase tracking-wider text-xs h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(InspectionUpdateStatus).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="sm"
+                onClick={handleStatusUpdate}
+                disabled={
+                  !status ||
+                  status === inspection.status ||
+                  updateMutation.isPending
+                }
+                className="h-9 px-3"
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </>
+          )}
 
           {user?.role === "ADMIN" && (
             <Button

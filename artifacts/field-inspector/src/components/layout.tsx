@@ -31,14 +31,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isOnline, queueCount, isSyncing } = useOfflineSync();
   const { user, logout } = useAuth();
-  console.log(user);
+
   const navItems = [
     { href: "/", label: "Dashboard", icon: Activity },
     { href: "/ai", label: "AI Assistant", icon: Bot },
     { href: "/map", label: "Map View", icon: MapIcon },
     { href: "/inspections", label: "Inspections", icon: Database },
     { href: "/activity", label: "Team Activity", icon: Rss },
-    { href: "/log", label: "Log Issue", icon: PlusSquare },
+    ...(user?.role !== "VIEWER"
+      ? [{ href: "/log", label: "Log Issue", icon: PlusSquare }]
+      : []),
   ];
 
   const displayName =
