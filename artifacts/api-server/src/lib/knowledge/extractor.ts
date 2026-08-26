@@ -36,7 +36,16 @@ export async function extractPdfPages(
   const filteredPages = pages.filter(
     (page) => page.text.trim().length > 0
   );
-
+  console.log(
+    filteredPages
+      .filter((page) =>
+        /appendix|delhi|wind speed|basic wind/i.test(page.text)
+      )
+      .map((page) => ({
+        page: page.pageNumber,
+        text: page.text.slice(0, 2000),
+      }))
+  );
   return normalizeIS875AppendixA(filteredPages);
 }
 
