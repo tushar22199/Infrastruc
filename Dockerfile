@@ -39,7 +39,10 @@ COPY --from=builder /app /app
 
 EXPOSE 10000
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+  && mkdir -p /app/artifacts/api-server/uploads \
+  && chown -R appuser:appgroup /app
+
 USER appuser
 
 WORKDIR /app/artifacts/api-server
