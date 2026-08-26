@@ -1,3 +1,4 @@
+import fs from "fs/promises";
 import { logger } from "../lib/logger";
 import { retrieveContext } from "../lib/knowledge/retriever";
 import { embedDocument } from "../lib/knowledge/embedder";
@@ -141,52 +142,86 @@ documentsRouter.post(
         return;
       }
 
+      const filePath = req.file.path;
+
       logger.info(
         {
           documentId,
           file: req.file.originalname,
-          path: req.file.path,
+          path: filePath,
         },
         "Starting IS 875 document repair"
       );
 
-      const pages = await extractPdfPages(req.file.path);
-
-      const chunks = (
-        await Promise.all(
-          pages.map((page) =>
-            chunkText(page.text, page.pageNumber)
-          )
-        )
-      ).flat();
-
-      await deleteDocumentChunks(documentId);
-      await createDocumentChunks(documentId, chunks);
-
-      logger.info(
-        {
-          documentId,
-          pageCount: pages.length,
-          chunkCount: chunks.length,
-        },
-        "IS 875 chunks rebuilt"
-      );
-
-      void embedDocument(documentId).catch((err) => {
-        logger.error(
-          { err, documentId },
-          "IS 875 embedding repair failed"
-        );
-      });
-
+      // Return immediately. OCR and chunk rebuilding happen
+      // in the background so the HTTP request does not time out.
       res.status(202).json({
         success: true,
-        message:
-          "IS 875 chunks rebuilt and embedding started",
+        message: "IS 875 document repair started",
         documentId,
-        pageCount: pages.length,
-        chunkCount: chunks.length,
       });
+
+      void (async () => {
+        try {
+          logger.info(
+            { documentId },
+            "IS 875 background extraction started"
+          );
+
+          const pages = await extractPdfPages(filePath);
+
+          logger.info(
+            {
+              documentId,
+              pageCount: pages.length,
+            },
+            "IS 875 PDF extraction completed"
+          );
+
+          const chunks = (
+            await Promise.all(
+              pages.map((page) =>
+                chunkText(page.text, page.pageNumber)
+              )
+            )
+          ).flat();
+
+          await deleteDocumentChunks(documentId);
+          await createDocumentChunks(documentId, chunks);
+
+          logger.info(
+            {
+              documentId,
+              pageCount: pages.length,
+              chunkCount: chunks.length,
+            },
+            "IS 875 chunks rebuilt"
+          );
+
+          await embedDocument(documentId);
+
+          logger.info(
+            { documentId },
+            "IS 875 embedding completed"
+          );
+        } catch (err) {
+          logger.error(
+            {
+              err,
+              documentId,
+            },
+            "IS 875 background repair failed"
+          );
+        } finally {
+          // The uploaded PDF is only needed during processing.
+          await fs.rm(filePath, { force: true }).catch((err) => {
+            logger.warn(
+              { err, filePath },
+              "Failed to remove temporary IS 875 PDF"
+            );
+          });
+        }
+      })();
     } catch (err) {
       next(err);
     }
