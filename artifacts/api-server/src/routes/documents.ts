@@ -10,7 +10,10 @@ import {
   deleteDocument,
 } from "../lib/knowledge/repository";
 
-import { extractPdfPages } from "../lib/knowledge/extractor";
+import {
+  extractPdfPages,
+  extractIS875AppendixPages,
+} from "../lib/knowledge/extractor";
 import { chunkText } from "../lib/knowledge/chunker";
 import { upload } from "../lib/knowledge/upload";
 import { Router } from "express";
@@ -79,7 +82,7 @@ documentsRouter.post(
         fileSize: req.file.size,
         storagePath: req.file.path,
       });
-      const pages = await extractPdfPages(req.file.path);
+      const pages = await extractIS875AppendixPages(req.file.path);
 
       const chunks = (
         await Promise.all(
