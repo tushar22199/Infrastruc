@@ -105,6 +105,25 @@ export async function updateDocumentProcessingStatus(
     })
     .where(eq(documentsTable.id, documentId));
 }
+export async function getProcessingDocuments() {
+  const result = await db.execute(sql`
+    SELECT
+      id,
+      title,
+      file_name,
+      file_type,
+      storage_path,
+      processing_status,
+      processing_error,
+      created_at,
+      updated_at
+    FROM documents
+    WHERE processing_status = 'processing'
+    ORDER BY updated_at ASC;
+  `);
+
+  return result.rows;
+}
 /* -------------------------------------------------------------------------- */
 /*                              Chunk Management                              */
 /* -------------------------------------------------------------------------- */

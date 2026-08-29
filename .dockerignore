@@ -30,7 +30,6 @@ pnpm-debug.log*
 Thumbs.db
 
 # Local-only folders
-attached_assets
 artifacts/mockup-sandbox
 .cache
 .local
