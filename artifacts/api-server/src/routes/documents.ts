@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-
+import { processDocument } from "../lib/knowledge/documentProcessor";
 import { Router } from "express";
 
 import { logger } from "../lib/logger";
@@ -275,102 +275,17 @@ documentsRouter.post(
 
       void (async () => {
         try {
-          logger.info(
-            { documentId },
-            "IS 875 background extraction started",
-          );
-
-          const pages = await extractPdfPages(filePath);
-
-          logger.info(
-            {
-              documentId,
-              pageCount: pages.length,
-            },
-            "IS 875 PDF extraction completed",
-          );
-
-          const chunks = (
-            await Promise.all(
-              pages.map((page) =>
-                chunkText(page.text, page.pageNumber),
-              ),
-            )
-          ).flat();
-
-          if (!chunks.length) {
-            throw new Error(
-              "IS 875 extraction produced no chunks",
-            );
-          }
-
-          await deleteDocumentChunks(documentId);
-
-          await createDocumentChunks(
-            documentId,
-            chunks,
-          );
-
-          logger.info(
-            {
-              documentId,
-              pageCount: pages.length,
-              chunkCount: chunks.length,
-            },
-            "IS 875 chunks rebuilt",
-          );
-
-          await embedDocument(documentId);
-
-          await updateDocumentProcessingStatus(
-            documentId,
-            "completed",
-            null,
-          );
-
-          logger.info(
-            { documentId },
-            "IS 875 embedding completed",
-          );
+          await processDocument(documentId, filePath);
+          logger.info({ documentId }, "IS 875 document repair completed");
         } catch (err) {
-          const errorMessage =
-            err instanceof Error
-              ? err.message
-              : String(err);
-
-          await updateDocumentProcessingStatus(
-            documentId,
-            "failed",
-            errorMessage,
-          ).catch((statusErr) => {
-            logger.error(
-              {
-                err: statusErr,
-                documentId,
-              },
-              "Failed to update IS 875 processing status",
+          logger.error({ err, documentId }, "IS 875 document repair failed");
+        } finally {
+          await fs.rm(filePath, { force: true }).catch(err => {
+            logger.warn(
+              { err, filePath },
+              "Failed to remove temporary IS 875 PDF",
             );
           });
-
-          logger.error(
-            {
-              err,
-              documentId,
-            },
-            "IS 875 background repair failed",
-          );
-        } finally {
-          await fs.rm(filePath, { force: true }).catch(
-            (err) => {
-              logger.warn(
-                {
-                  err,
-                  filePath,
-                },
-                "Failed to remove temporary IS 875 PDF",
-              );
-            },
-          );
         }
       })();
     } catch (err) {

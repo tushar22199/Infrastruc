@@ -17,11 +17,7 @@ const IS875_DOCUMENT_ID =
 const IS875_FILENAME = "is.875.3.1987.pdf";
 
 function getIS875CanonicalPath() {
-  return path.resolve(
-    process.cwd(),
-    "attached_assets",
-    IS875_FILENAME,
-  );
+  return path.resolve(process.cwd(), "attached_assets", IS875_FILENAME);
 }
 
 export async function processDocument(

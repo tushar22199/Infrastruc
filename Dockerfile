@@ -13,7 +13,7 @@ COPY tsconfig*.json ./
 COPY packages ./packages
 COPY lib ./lib
 COPY artifacts ./artifacts
-
+COPY attached_assets ./attached_assets
 RUN pnpm config set onlyBuiltDependencies "@swc/core,esbuild,msw,unrs-resolver"
 RUN pnpm install --frozen-lockfile
 
