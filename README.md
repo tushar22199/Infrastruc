@@ -80,12 +80,28 @@ Both configurations enable standard rate-limit headers (`standardHeaders: true`)
 
 ## Architecture at a Glance
 
+```mermaid
+flowchart LR
+    User[Field Engineer] --> UI[React + TypeScript UI]
+    UI -->|HTTPS / JWT| API[Express API]
+    UI <-->|Offline queue / sync| Local[(IndexedDB + Dexie)]
+    API --> Auth[Authentication + RBAC]
+    API --> DB[(PostgreSQL on Neon)]
+    API --> Reports[PDF Report Generation]
+    API --> AI[RAG + AI Image Analysis]
+    AI --> Knowledge[Engineering Standards + Inspection Context]
+    Voice[InfraSight Voice UI] -->|Authenticated MCP| MCP[Read-only search_inspections]
+    MCP --> API
+    DB --> Analytics[Dashboard + Regional Health Score]
+```
+
 1. The React client provides inspection workflows, dashboards, map views, and AI-assisted interfaces.
 2. The Express API handles application requests, authentication, access control, inspection operations, and report generation.
 3. PostgreSQL stores application data, accessed through Drizzle ORM and hosted on Neon.
 4. AI retrieval uses indexed knowledge and inspection records to supply relevant context for assistant responses.
 5. Offline inspection submissions are queued locally and synchronized when the client reconnects.
 6. InfraSight Voice calls the authenticated MCP endpoint to run read-only inspection searches.
+
 
 ## Local Development
 
