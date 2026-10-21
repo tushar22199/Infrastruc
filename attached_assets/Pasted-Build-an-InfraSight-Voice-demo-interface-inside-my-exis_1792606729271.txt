@@ -1,0 +1,31 @@
+Build an “InfraSight Voice” demo interface inside my existing InfraSight AI project.
+
+**Existing production services**
+- Frontend: https://infrastruc.vercel.app
+- Backend: https://infrastruc.onrender.com
+- MCP endpoint: POST https://infrastruc.onrender.com/mcp
+- Existing stack: React, TypeScript, Express, Tailwind CSS.
+
+**Working MCP integration**
+The authenticated MCP endpoint is already deployed and verified. It supports:
+- `initialize`
+- `tools/list`
+- `tools/call` with tool name `search_inspections` and arguments `{ "query": "..." }`
+
+The tool returns inspection results inside a JSON-RPC response. The response is delivered as server-sent event text with an `event: message` line and a `data: {...}` line.
+
+**Build requirements**
+1. Inspect the existing frontend structure and reuse its components, routing, styling, and authentication utilities. Do not replace or rewrite the existing application.
+2. Add a polished, responsive InfraSight Voice page or section consistent with the existing design.
+3. Provide a natural-language search input and clickable example prompts such as “Show all inspections,” “Find pavement distress,” and “Show bridge deterioration.”
+4. Call the existing MCP endpoint using the current authenticated user's JWT. Reuse the existing token retrieval logic rather than assuming a new token key. Never hardcode credentials.
+5. Parse the MCP SSE response safely, extract the JSON-RPC result, and parse the tool's text content as JSON.
+6. Display result count and inspection cards with title, issue type, severity, status, description, and coordinates when available.
+7. Include loading, empty results, network errors, authentication errors, and MCP errors.
+8. Add a clear read-only MCP connection indicator. Do not create, modify, or delete inspection records.
+9. Do not fabricate inspection data or claim that an inspection is critical unless the returned record says so.
+10. Keep the current backend and database behavior unchanged. Do not expose secrets or JWTs in logs.
+11. Add appropriate TypeScript types and handle malformed SSE or JSON responses gracefully.
+12. Test the new page and ensure existing application functionality continues to work.
+
+Before editing, inspect the existing project and explain which files you plan to change. Then implement the feature using the current architecture.

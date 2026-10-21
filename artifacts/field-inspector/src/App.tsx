@@ -1,4 +1,5 @@
 import AIAssistant from "@/pages/ai-assistant";
+import InfraSightVoice from "@/pages/infrasight-voice";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import LoginPage from "@/pages/login";
 import { AuthProvider } from "@/lib/auth";
@@ -38,6 +39,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/ai" component={AIAssistant} />
+        <Route path="/voice" component={InfraSightVoice} />
         <Route path="/map" component={MapView} />
         <Route path="/log" component={LogInspection} />
         <Route path="/inspections" component={Inspections} />

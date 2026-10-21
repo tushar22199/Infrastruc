@@ -3,7 +3,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { normalizePdfText } from "./normalize";
 import { normalizeIS875AppendixA } from "./is875-appendix-a";
-
+import { logger } from "../logger";
 const execFileAsync = promisify(execFile);
 
 export type ExtractedPage = {
@@ -53,6 +53,11 @@ export async function ocrPdfPage(
   pageNumber: number,
 ): Promise<string> {
   const tempDir = `/tmp/is875-${process.pid}-${pageNumber}`;
+
+  logger.info(
+    { pageNumber, filePath },
+    "OCR started",
+  );
 
   await fs.mkdir(tempDir, { recursive: true });
 
@@ -106,18 +111,34 @@ export async function extractIS875AppendixPages(
 ): Promise<ExtractedPage[]> {
   const pages: ExtractedPage[] = [];
 
-  // IS 875 (Part 3):1987 Appendix A starts on PDF page 62.
-  // Appendices continue through page 69.
+  logger.info(
+    { filePath },
+    "IS 875 Appendix A extraction started",
+  );
+
+  // Appendix A starts on PDF page 62 and continues through page 69.
   for (let pageNumber = 62; pageNumber <= 69; pageNumber++) {
+    logger.info(
+      { pageNumber },
+      "IS 875 OCR page started",
+    );
+
     const text = await ocrPdfPage(filePath, pageNumber);
 
+    logger.info(
+      { pageNumber, textLength: text.length },
+      "IS 875 OCR page completed",
+    );
+
     if (text.trim().length > 0) {
-      pages.push({
-        pageNumber,
-        text,
-      });
+      pages.push({ pageNumber, text });
     }
   }
+
+  logger.info(
+    { pageCount: pages.length },
+    "IS 875 Appendix A extraction finished",
+  );
 
   return normalizeIS875AppendixA(pages);
 }

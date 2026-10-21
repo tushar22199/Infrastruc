@@ -1,4 +1,4 @@
-import { Bot } from "lucide-react";
+import { Bot, Mic } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useOfflineSync } from "@/lib/offline-sync";
 import { Link, useLocation } from "wouter";
@@ -35,6 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: Activity },
     { href: "/ai", label: "AI Assistant", icon: Bot },
+    { href: "/voice", label: "InfraSight Voice", icon: Mic },
     { href: "/map", label: "Map View", icon: MapIcon },
     { href: "/inspections", label: "Inspections", icon: Database },
     { href: "/activity", label: "Team Activity", icon: Rss },
