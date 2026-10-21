@@ -1,3 +1,6 @@
+import { requireAuth } from "./middlewares/authMiddleware";
+import { createInfraSightMcpServer } from "./lib/mcp-server";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
@@ -62,7 +65,41 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(authMiddleware);
+app.all("/mcp", requireAuth, async (req, res) => {
+  const server = createInfraSightMcpServer();
 
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  try {
+    await server.connect(transport);
+
+    await transport.handleRequest(
+      req,
+      res,
+      req.body,
+    );
+
+    res.on("close", () => {
+      void transport.close().catch((err) => {
+        logger.warn({ err }, "MCP transport cleanup failed");
+      });
+
+      void server.close().catch((err) => {
+        logger.warn({ err }, "MCP server cleanup failed");
+      });
+    });
+  } catch (err) {
+    logger.error({ err }, "MCP request failed");
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: "MCP request failed",
+      });
+    }
+  }
+});
 app.use("/api", router);
 app.get("/health", (_req, res) => {
   res.status(200).json({
