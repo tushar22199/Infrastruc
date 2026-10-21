@@ -12,11 +12,31 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { errorHandler } from "./middlewares/errorHandler";
+import mcpProxyRouter from "./routes/mcp-proxy";
 
-const allowedOrigins = [
+const allowedOrigins = new Set([
   "http://localhost:5173",
   "https://infrastruc.vercel.app",
-];
+]);
+
+if (process.env.NODE_ENV !== "production") {
+  allowedOrigins.add("http://127.0.0.1");
+  allowedOrigins.add("http://localhost");
+
+  const previewDomain = process.env.REPLIT_DEV_DOMAIN?.trim();
+  if (previewDomain) {
+    try {
+      const previewOrigin = new URL(
+        previewDomain.includes("://")
+          ? previewDomain
+          : `https://${previewDomain}`,
+      ).origin;
+      allowedOrigins.add(previewOrigin);
+    } catch {
+      // Ignore malformed optional preview-domain configuration.
+    }
+  }
+}
 const app: Express = express();
 app.set("trust proxy", 1);
 app.use(
@@ -43,7 +63,7 @@ app.use(
   cors({
     credentials: true,
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.has(origin)) {
         return callback(null, true);
       }
 
@@ -64,6 +84,7 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use("/api/mcp-proxy", mcpProxyRouter);
 app.use(authMiddleware);
 app.all("/mcp", requireAuth, async (req, res) => {
   const server = createInfraSightMcpServer();

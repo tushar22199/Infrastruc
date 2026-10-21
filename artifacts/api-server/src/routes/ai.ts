@@ -14,10 +14,22 @@ import { logger } from "../lib/logger";
 const aiRouter = Router();
 aiRouter.use(requireAuth);
 aiRouter.use(aiLimiter);
-const client = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
-});
+let client: OpenAI | undefined;
+
+function getClient(): OpenAI {
+  if (client) return client;
+
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY is required for AI endpoints.");
+  }
+
+  client = new OpenAI({
+    apiKey,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+  return client;
+}
 const upload = multer({
   storage: multer.memoryStorage(),
 
@@ -62,7 +74,7 @@ Generate:
 - Recommendation
 `;
 
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: [
         {
@@ -419,7 +431,7 @@ Requirements:
     // ----------------------------
     // LLM Call
     // ----------------------------
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: "openai/gpt-oss-120b",
       temperature: 0.2,
       messages: promptMessages,
@@ -463,7 +475,7 @@ aiRouter.post(
       const imageBase64 = req.file.buffer.toString("base64");
       const imageUrl = `data:${req.file.mimetype};base64,${imageBase64}`;
 
-      const response = await client.chat.completions.create({
+      const response = await getClient().chat.completions.create({
         model: "qwen/qwen3.6-27b",
         messages: [
           {
@@ -499,7 +511,7 @@ aiRouter.post(
 );
 aiRouter.get("/models", async (_req, res) => {
   try {
-    const models = await client.models.list();
+    const models = await getClient().models.list();
     res.json(models);
   } catch (err) {
     console.error(err);

@@ -1,4 +1,6 @@
-const MCP_ENDPOINT = "https://infrastruc.onrender.com/mcp";
+const MCP_ENDPOINT = import.meta.env.DEV
+  ? "/api/mcp-proxy"
+  : "https://infrastruc.onrender.com/mcp";
 const MCP_PROTOCOL_VERSION = "2025-03-26";
 
 export type McpSearchErrorKind = "auth" | "network" | "mcp" | "protocol";
