@@ -1,6 +1,8 @@
 # InfraSight AI
 ### AI-Powered Infrastructure Inspection & Auditing Platform
 
+[![CI](https://github.com/tushar22199/Infrastruc/actions/workflows/ci.yml/badge.svg)](https://github.com/tushar22199/Infrastruc/actions/workflows/ci.yml)
+
 InfraSight AI is a full-stack platform for managing infrastructure inspections, identifying defects, tracking inspection status, and turning inspection data into actionable insights. It combines a field-inspection workflow with AI-assisted analysis, standards-aware retrieval, reporting, and operational dashboards.
 
 **Live application:** https://infrastruc.vercel.app  
