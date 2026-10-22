@@ -7,6 +7,45 @@ InfraSight AI is a full-stack platform for managing infrastructure inspections, 
 **API:** https://infrastruc.onrender.com  
 **Repository:** https://github.com/tushar22199/Infrastruc
 
+
+## Screenshots
+
+InfraSight AI combines infrastructure inspection workflows, AI-assisted engineering knowledge retrieval, geospatial issue tracking, and field-record search.
+
+### Infrastructure Intelligence Dashboard
+
+Monitor inspection trends, active issues, regional health scores, and overdue re-inspections.
+
+![Infrastructure Intelligence Dashboard](docs/screenshots/dashboard-overview.webp)
+
+![Dashboard Metrics](docs/screenshots/dashboard-metrics.webp)
+
+### Inspection Management
+
+Search and filter inspection records, then review individual issues and their reported locations.
+
+![Inspection Database](docs/screenshots/inspection-database.webp)
+
+![Inspection Detail and Location Map](docs/screenshots/inspection-detail-map.webp)
+
+### AI-Powered Engineering Assistant
+
+Ask engineering questions, analyze inspection context, and retrieve information from the indexed Indian Standards knowledge base.
+
+![AI Assistant Summary](docs/screenshots/ai-assistant-summary.webp)
+
+![AI Assistant — Indian Standards](docs/screenshots/ai-assistant-is-code.webp)
+
+![AI Assistant Analysis](docs/screenshots/ai-assistant-analysis.webp)
+
+### InfraSight Voice
+
+Search inspection records in natural language through a read-only interface.
+
+![InfraSight Voice Search](docs/screenshots/voice-inspection-search.webp)
+
+![InfraSight Voice Search Results](docs/screenshots/voice-search-results.webp)
+
 ---
 
 ## Highlights
