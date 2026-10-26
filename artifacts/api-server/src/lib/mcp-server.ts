@@ -1,6 +1,5 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { retrieveRelevantInspections } from "./ai/retriever/inspection-retriever";
 import { z } from "zod";
 
 export function createInfraSightMcpServer() {
@@ -17,8 +16,11 @@ export function createInfraSightMcpServer() {
         "A natural-language search, such as 'show critical active bridge inspections' or 'summarize recent road defects'.",
       ),
     },
-    async ({ query }) => {
+        async ({ query }) => {
       try {
+        const { retrieveRelevantInspections } = await import(
+          "./ai/retriever/inspection-retriever"
+        );
         const results = await retrieveRelevantInspections(query);
 
         return {

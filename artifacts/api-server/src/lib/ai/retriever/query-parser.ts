@@ -1,8 +1,6 @@
 import { issueTypeSynonyms } from "./synonyms";
-import {
- 
-  statusEnum,
-} from "@workspace/db";
+
+const statusEnum = ["Active", "Resolved", "Under Review"] as const;
 
 export interface QueryFilters {
   issueType?: string;

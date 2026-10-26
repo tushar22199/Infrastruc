@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractSearchTerms } from "../src/lib/knowledge/retriever.ts";
+import { extractSearchTerms } from "../src/lib/knowledge/search-terms";
 
 describe("extractSearchTerms", () => {
   it("extracts keywords from a normal engineering query", () => {

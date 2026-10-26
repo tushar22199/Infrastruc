@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractRequestedStandard } from "../src/lib/knowledge/retriever";
+import { extractRequestedStandard } from "../src/lib/knowledge/standard-detector";
 
 describe("extractRequestedStandard", () => {
   it("detects IS codes", () => {
